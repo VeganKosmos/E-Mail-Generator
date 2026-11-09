@@ -29,7 +29,7 @@
           Wo kaufst du ein? (PLZ oder Ort)
         </label>
         <div class="flex gap-2 mb-2.5">
-          <input type="text" id="zip-input" placeholder="z.B. 46240, Bottrop, 40667..." 
+          <input type="text" id="zip-input" placeholder="z.B. 46240, 59846, Bochum..." 
                  onkeydown="if(event.key==='Enter') searchGermanyMarkets()"
                  class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
           <button onclick="searchGermanyMarkets()" id="search-btn" 
@@ -38,7 +38,7 @@
           </button>
         </div>
 
-        <!-- ECHTE FORTSCHRITTS-ANZEIGE (PROGRESS BAR) -->
+        <!-- FORTSCHRITTS-ANZEIGE (PROGRESS BAR) -->
         <div id="progress-container" class="hidden mb-3 bg-white p-2.5 rounded-lg border border-slate-200">
           <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
             <span id="progress-step-text">Starte Suche...</span>
@@ -49,22 +49,50 @@
           </div>
         </div>
 
-        <!-- STATUS & FEHLER-ANZEIGE -->
-        <div id="search-status" class="text-xs mb-2.5 px-2.5 py-1.5 rounded-lg hidden"></div>
+        <!-- STATUS-HINWEIS -->
+        <div id="search-status" class="text-xs mb-2.5 px-3 py-2 rounded-lg hidden"></div>
 
-        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Markt auswählen:</label>
-        <select id="market-select" onchange="onMarketChange()" 
-                class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-2">
-        </select>
+        <!-- DROPDOWN FÜR GEFUNDENE ECHTE MÄRKTE -->
+        <div id="dropdown-wrapper">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Markt auswählen:</label>
+          <select id="market-select" onchange="onMarketChange()" 
+                  class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-2">
+          </select>
 
-        <!-- DETAIL-KARTE ZUR MARKT-IDENTIFIKATION -->
-        <div id="market-detail-card" class="bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-slate-800" id="detail-name"></span>
-            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11px]" id="detail-brand"></span>
+          <!-- HINWEIS-BANNER WENN MARKT SCHON AUF NOT-EGG.DE GELISTET IST -->
+          <div id="already-listed-banner" class="hidden mb-2 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs leading-relaxed">
+            🎉 <strong>Gute Nachricht:</strong> Laut <a href="https://not-egg.de/bezugsquellen/" target="_blank" class="underline font-bold">not-egg.de/bezugsquellen</a> hat dieser Markt <strong>Not-Egg bereits im Sortiment!</strong><br>
+            💡 <em>Tipp: Wir haben deine E-Mail unten automatisch angepasst, damit du beim Markt nachfragen kannst, ob es aktuell vorrätig oder schon nachbestellt ist.</em>
           </div>
-          <div id="detail-address" class="text-slate-600"></div>
-          <div id="detail-extra" class="text-slate-400 text-[11px]"></div>
+
+          <!-- DETAIL-KARTE ZUR MARKT-IDENTIFIKATION -->
+          <div id="market-detail-card" class="bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-slate-800" id="detail-name"></span>
+              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11px] shrink-0" id="detail-brand"></span>
+            </div>
+            <div id="detail-address" class="text-slate-600"></div>
+            <div id="detail-extra" class="text-slate-400 text-[11px]"></div>
+          </div>
+        </div>
+
+        <!-- MANUELLE EINGABE (Wird nur genutzt, falls ein Markt auf der Karte fehlt) -->
+        <div class="mt-2 text-right">
+          <button type="button" onclick="toggleManualMarket()" id="manual-toggle-btn" class="text-[11px] text-slate-500 underline hover:text-slate-800">
+            Dein Markt fehlt in der Liste? Hier manuell eingeben
+          </button>
+        </div>
+
+        <div id="manual-market-box" class="hidden mt-2 pt-2.5 border-t border-slate-200 space-y-2">
+          <p class="text-xs text-slate-600 font-medium">Trage deinen echten Markt vor Ort ein (keine fiktiven Märkte):</p>
+          <div class="grid grid-cols-3 gap-2">
+            <select id="manual-brand" onchange="renderEmail()" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white font-bold">
+              <option value="REWE">REWE</option>
+              <option value="EDEKA">EDEKA</option>
+            </select>
+            <input type="text" id="manual-name" oninput="renderEmail()" placeholder="Name (z.B. EDEKA Müller)" class="col-span-2 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
+          </div>
+          <input type="text" id="manual-street" oninput="renderEmail()" placeholder="Straße, Hausnr. & Ort (z.B. Hauptstr. 5, 59846 Sundern)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
         </div>
       </div>
 
@@ -96,12 +124,15 @@
           </button>
         </div>
 
+        <!-- SAUBER GETRENNTE EMPFÄNGER- & CC-ZEILEN (Kein Überlappen mehr auf dem Handy!) -->
         <div class="bg-slate-50 border border-slate-300 rounded-t-xl p-2.5 border-b-0 space-y-1">
-          <div class="flex items-center justify-between text-xs text-slate-500">
-            <span>An: <strong id="preview-to" class="font-mono text-slate-800"></strong></span>
-            <span id="preview-cc-wrap" class="text-slate-400 font-mono hidden">CC: <span id="preview-cc"></span></span>
+          <div class="text-xs text-slate-500 break-all">
+            An: <strong id="preview-to" class="font-mono text-slate-800"></strong>
           </div>
-          <div class="pt-1 border-t border-slate-200">
+          <div id="preview-cc-wrap" class="text-xs text-slate-400 font-mono break-all hidden">
+            Kopie (CC): <span id="preview-cc"></span>
+          </div>
+          <div class="pt-1.5 border-t border-slate-200">
             <input type="text" id="preview-subject" 
                    oninput="updateMailtoLink()"
                    class="w-full bg-transparent font-bold text-sm text-slate-900 focus:outline-none">
@@ -141,14 +172,70 @@
   </div>
 
   <script>
-    const CUSTOM_MARKETS = [
-      { zip: "40667", brand: "REWE", name: "REWE Markt Meerbusch-Büderich", street: "Düsseldorfer Str. 10, 40667 Meerbusch (Büderich)", operator: "REWE Markt GmbH", hours: "Mo-Sa 07:00-22:00", email: "" },
-      { zip: "40667", brand: "EDEKA", name: "EDEKA Nettersheim", street: "Moerser Str. 45, 40667 Meerbusch (Büderich)", operator: "Edeka Nettersheim", hours: "Mo-Sa 07:00-21:00", email: "" },
-      { zip: "46240", brand: "EDEKA", name: "EDEKA Zurheide", street: "Gladbecker Str. 130, 46240 Bottrop (Eigen)", operator: "Zurheide Feine Kost", hours: "Mo-Sa 07:00-21:00", email: "" },
-      { zip: "46240", brand: "REWE", name: "REWE Markt Bottrop", street: "Johannes-Rau-Str. 17, 46240 Bottrop", operator: "REWE", hours: "Mo-Sa 07:00-22:00", email: "" },
-      { zip: "28195", brand: "REWE", name: "REWE City Bremen Mitte", street: "Obernstr. 5, 28195 Bremen (Mitte)", operator: "REWE", hours: "Mo-Sa 07:00-22:00", email: "" },
-      { zip: "10117", brand: "REWE", name: "REWE Markt Berlin Friedrichstraße", street: "Friedrichstr. 100, 10117 Berlin (Mitte)", operator: "REWE", hours: "Mo-Sa 06:00-23:30", email: "" }
+    // =========================================================================
+    // 1. OFFIZIELLE BEZUGSQUELLEN VON NOT-EGG.DE/BEZUGSQUELLEN/ (Stand: 11/2026)
+    // Wenn ein Markt hier gelistet ist, warnt die App den Nutzer & schlägt die
+    // Verfügbarkeits-/Nachbestell-E-Mail vor!
+    // =========================================================================
+    const NOT_EGG_STOCKISTS = [
+      { zip: "97631", brand: "EDEKA", name: "Edeka Höchner", street: "Hoher Markstein 6, 97631 Bad Königshofen", streetKey: "hoher markstein", hasNotEgg: true },
+      { zip: "12587", brand: "EDEKA", name: "Edeka Voigt", street: "Bölschestr. 36, 12587 Berlin", streetKey: "bölschestr", hasNotEgg: true },
+      { zip: "10245", brand: "REWE", name: "REWE Henkelmann", street: "Revaler Str. 33, 10245 Berlin", streetKey: "revaler", hasNotEgg: true },
+      { zip: "10243", brand: "REWE", name: "REWE Voll Pflanzlich", street: "Warschauer Str. 33, 10243 Berlin", streetKey: "warschauer", hasNotEgg: true },
+      { zip: "44789", brand: "REWE", name: "REWE Freidank Bochum", street: "Joachimstr. 27-29, 44789 Bochum", streetKey: "joachimstr", hasNotEgg: true },
+      { zip: "28207", brand: "REWE", name: "REWE Hohwisch", street: "Auf der Hohwisch 42, 28207 Bremen (Hastedt)", streetKey: "hohwisch", hasNotEgg: true },
+      { zip: "28217", brand: "REWE", name: "REWE Rena Magdalena Langosz", street: "Am Winterhafen 5, 28217 Bremen", streetKey: "winterhafen", hasNotEgg: true },
+      { zip: "76646", brand: "REWE", name: "REWE Jens Ullmann", street: "John-Bopp-Str. 10, 76646 Bruchsal", streetKey: "john-bopp", hasNotEgg: true },
+      { zip: "89165", brand: "EDEKA", name: "Edeka Daus", street: "Räuchlestraße 1, 89165 Dietenheim", streetKey: "räuchlestr", hasNotEgg: true },
+      { zip: "44141", brand: "EDEKA", name: "Edeka Wegner", street: "Märkische Str. 82a, 44141 Dortmund", streetKey: "märkische str. 82", hasNotEgg: true },
+      { zip: "44139", brand: "REWE", name: "REWE Freidank", street: "Landgrafenstr. 153, 44139 Dortmund", streetKey: "landgrafenstr", hasNotEgg: true },
+      { zip: "44141", brand: "REWE", name: "REWE Freidank", street: "Märkische Str. 75, 44141 Dortmund", streetKey: "märkische str. 75", hasNotEgg: true },
+      { zip: "44139", brand: "REWE", name: "REWE Freidank", street: "Saarlandstr. 76-78, 44139 Dortmund", streetKey: "saarlandstr", hasNotEgg: true },
+      { zip: "44267", brand: "REWE", name: "REWE Homberg", street: "Pfarrer-Rüter-Weg 2, 44267 Dortmund", streetKey: "pfarrer-rüter", hasNotEgg: true },
+      { zip: "73479", brand: "EDEKA", name: "Edeka Schnell", street: "Konrad-Adenauer-Straße 36, 73479 Ellwangen (Jagst)", streetKey: "konrad-adenauer-straße 36", hasNotEgg: true },
+      { zip: "25336", brand: "REWE", name: "REWE Ide", street: "Westerstr. 34, 25336 Elmshorn", streetKey: "westerstr", hasNotEgg: true },
+      { zip: "85354", brand: "REWE", name: "REWE Stanisic Schlüter Hallen", street: "Münchner Str. 32, 85354 Freising", streetKey: "münchner str. 32", hasNotEgg: true },
+      { zip: "23683", brand: "REWE", name: "REWE Haase Haffkrug", street: "Waldweg 2b, 23683 Haffkrug", streetKey: "waldweg 2", hasNotEgg: true },
+      { zip: "22765", brand: "EDEKA", name: "Edeka Hirche Altona", street: "Harkortstraße 81C, 22765 Hamburg (Altona)", streetKey: "harkortstr", hasNotEgg: true },
+      { zip: "20259", brand: "EDEKA", name: "Edeka Hirche Eimsbüttel", street: "Eimsbütteler Chaussee 17, 20259 Hamburg (Eimsbüttel)", streetKey: "eimsbütteler chaussee", hasNotEgg: true },
+      { zip: "20146", brand: "REWE", name: "REWE Menz Eimsbüttel", street: "Grindelallee 40-44, 20146 Hamburg (Eimsbüttel)", streetKey: "grindelallee", hasNotEgg: true },
+      { zip: "22307", brand: "REWE", name: "REWE Nicholas Otto Barmbek", street: "Steilshooper Str. 190, 22307 Hamburg (Barmbek)", streetKey: "steilshooper", hasNotEgg: true },
+      { zip: "97461", brand: "EDEKA", name: "Edeka Höchner Hofheim", street: "Am Sänniggrund 8, 97461 Hofheim", streetKey: "sänniggrund", hasNotEgg: true },
+      { zip: "25524", brand: "REWE", name: "REWE Denis Poellath", street: "Lise-Meitner-Str. 16, 25524 Itzehoe", streetKey: "lise-meitner", hasNotEgg: true },
+      { zip: "50933", brand: "REWE", name: "REWE Weis Braunsfeld", street: "Stolberger Str. 345, 50933 Köln (Braunsfeld)", streetKey: "stolberger", hasNotEgg: true },
+      { zip: "50767", brand: "REWE", name: "REWE Weis Heimersdorf", street: "Haselnussweg 33-35, 50767 Köln (Heimersdorf)", streetKey: "haselnussweg", hasNotEgg: true },
+      { zip: "26736", brand: "EDEKA", name: "Edeka Schröllkamp", street: "Schatthausstraße 2a, 26736 Krummhörn-Pewsum", streetKey: "schatthausstr", hasNotEgg: true },
+      { zip: "59348", brand: "REWE", name: "REWE Gawdi Lüdinghausen", street: "Konrad-Adenauer-Str. 6, 59348 Lüdinghausen", streetKey: "konrad-adenauer-str. 6", hasNotEgg: true },
+      { zip: "35037", brand: "REWE", name: "REWE EinsA Marburg", street: "Erlenring 9, 35037 Marburg", streetKey: "erlenring", hasNotEgg: true },
+      { zip: "45470", brand: "REWE", name: "REWE Scholand", street: "Essener Str. 50, 45470 Mülheim an der Ruhr", streetKey: "essener str. 50", hasNotEgg: true },
+      { zip: "23730", brand: "REWE", name: "REWE Haase Neustadt", street: "Sierksdorfer Str. 8, 23730 Neustadt in Holstein", streetKey: "sierksdorfer", hasNotEgg: true },
+      { zip: "48529", brand: "REWE", name: "REWE Döring Nordhorn", street: "Friedrich-Ebert-Str. 2, 48529 Nordhorn", streetKey: "friedrich-ebert-str. 2", hasNotEgg: true },
+      { zip: "53757", brand: "REWE", name: "REWE Pfleger", street: "Schulstr. 5, 53757 Sankt Augustin", streetKey: "schulstr. 5", hasNotEgg: true },
+      { zip: "97424", brand: "EDEKA", name: "Edeka Höchner Schweinfurt", street: "Oskar-von-Miller-Straße 6, 97424 Schweinfurt", streetKey: "oskar-von-miller", hasNotEgg: true },
+      { zip: "59379", brand: "REWE", name: "REWE Gawdi Selm", street: "Kreisstr. 92, 59379 Selm", streetKey: "kreisstr. 92", hasNotEgg: true }
     ];
+
+    // Vorab-Märkte (Startauswahl + verifizierte Beispiele)
+    const CUSTOM_MARKETS = [
+      { zip: "40667", brand: "REWE", name: "REWE Markt Meerbusch-Büderich", street: "Düsseldorfer Str. 10, 40667 Meerbusch (Büderich)", operator: "REWE Markt GmbH", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: false },
+      { zip: "40667", brand: "EDEKA", name: "EDEKA Nettersheim", street: "Moerser Str. 45, 40667 Meerbusch (Büderich)", operator: "Edeka Nettersheim", hours: "Mo-Sa 07:00-21:00", email: "", hasNotEgg: false },
+      { zip: "46240", brand: "EDEKA", name: "EDEKA Zurheide Bottrop", street: "Gladbecker Str. 130, 46240 Bottrop (Eigen)", operator: "Zurheide Feine Kost", hours: "Mo-Sa 07:00-21:00", email: "", hasNotEgg: false },
+      { zip: "46240", brand: "REWE", name: "REWE Markt Bottrop", street: "Johannes-Rau-Str. 17, 46240 Bottrop", operator: "REWE", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: false },
+      { zip: "59846", brand: "EDEKA", name: "EDEKA Cramer Sundern", street: "Freiheitsmühle 1, 59846 Sundern (Sauerland)", operator: "EDEKA Cramer", hours: "Mo-Sa 07:00-21:00", email: "info@edeka-cramer.de", hasNotEgg: false },
+      { zip: "59846", brand: "REWE", name: "REWE Brücken Sundern-Hachen", street: "Hachener Str. 126, 59846 Sundern (Hachen)", operator: "Michael Brücken Kaufpark oHG", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: false },
+      { zip: "44789", brand: "REWE", name: "REWE Freidank Bochum", street: "Joachimstr. 27-29, 44789 Bochum", operator: "REWE Freidank", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: true }
+    ];
+
+    function checkIfStockist(zip, name, street) {
+      var combinedStr = ((name || "") + " " + (street || "")).toLowerCase();
+      for (var i = 0; i < NOT_EGG_STOCKISTS.length; i++) {
+        var s = NOT_EGG_STOCKISTS[i];
+        if (s.zip === zip && combinedStr.indexOf(s.streetKey) !== -1) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     function getEdekaRegionalEmail(zipStr) {
       const prefix = parseInt((zipStr || "").substring(0, 2), 10);
@@ -174,50 +261,50 @@
             id: "neutral",
             label: "📄 Kurz & sachlich nach dem Produkt fragen (Standard)",
             middleVariants: [
-              "Ich möchte mich erkundigen, ob Sie das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro) in Ihr Sortiment aufnehmen können. Bisher konnte ich das Produkt in Ihrer Tiefkühlabteilung leider noch nicht finden.",
-              "Konkret suche ich in Ihrem Tiefkühlsortiment das vegane Spiegelei 'Not Egg' (Hersteller: Vegitaro, Infos unter https://not-egg.de). Ich würde dieses Produkt sehr gerne regelmäßig bei meinem Einkauf in Ihrem Markt erwerben.",
-              "Gerne möchte ich anregen, die pflanzliche Ei-Alternative 'Not Egg' (https://not-egg.de von Vegitaro) für die Tiefkühltruhe in Ihrer Filiale zu listen. Es handelt sich um ein fertiges Spiegelei auf rein pflanzlicher Basis.",
-              "Bei meinen Einkäufen in Ihrem Markt halte ich nach dem veganen Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de vom Bremer Hersteller Vegitaro) Ausschau und würde mich sehr freuen, wenn Sie dieses Produkt ins Sortiment aufnehmen."
+              "Ich möchte mich erkundigen, ob Sie das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) in Ihr Sortiment aufnehmen können. Bisher konnte ich das Produkt in Ihrer Tiefkühlabteilung leider noch nicht finden.",
+              "Konkret suche ich in Ihrem Tiefkühlsortiment das vegane Spiegelei 'Not Egg' (Infos unter https://not-egg.de). Ich würde dieses Produkt sehr gerne regelmäßig bei meinem Einkauf in Ihrem Markt erwerben.",
+              "Gerne möchte ich anregen, die pflanzliche Ei-Alternative 'Not Egg' (https://not-egg.de) für die Tiefkühltruhe in Ihrer Filiale zu listen. Es handelt sich um ein fertiges Spiegelei auf rein pflanzlicher Basis.",
+              "Bei meinen Einkäufen in Ihrem Markt halte ich nach dem veganen Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) Ausschau und würde mich sehr freuen, wenn Sie dieses Produkt ins Sortiment aufnehmen."
             ]
           },
           {
             id: "social",
             label: "📱 Online / auf Social Media entdeckt",
             middleVariants: [
-              "Über Social Media und das Internet bin ich auf das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro) aufmerksam geworden und würde es sehr gerne bei Ihnen vor Ort kaufen.",
-              "Ich habe online schon viel Positives über die vegane Ei-Alternative 'Not Egg' (https://not-egg.de von Vegitaro) für die Tiefkühltruhe gesehen und hoffe sehr, dass es bald auch in Ihrem Markt erhältlich ist.",
-              "In den sozialen Medien wird aktuell viel über das neue pflanzliche Spiegelei 'Not Egg' (https://not-egg.de, Hersteller: Vegitaro) berichtet. Ich würde das Tiefkühlprodukt unheimlich gerne bei meinem Wocheneinkauf in Ihrer Filiale mitnehmen.",
-              "Online habe ich das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) entdeckt. Da ich lieber lokal bei Ihnen im Markt einkaufe statt online zu bestellen, wünsche ich mir das Produkt sehr für Ihr Tiefkühlregal."
+              "Über Social Media und das Internet bin ich auf das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) aufmerksam geworden und würde es sehr gerne bei Ihnen vor Ort kaufen.",
+              "Ich habe online schon viel Positives über die vegane Ei-Alternative 'Not Egg' (https://not-egg.de) für die Tiefkühltruhe gesehen und hoffe sehr, dass es bald auch in Ihrem Markt erhältlich ist.",
+              "In den sozialen Medien wird aktuell viel über das neue pflanzliche Spiegelei 'Not Egg' (https://not-egg.de) berichtet. Ich würde das Tiefkühlprodukt unheimlich gerne bei meinem Wocheneinkauf in Ihrer Filiale mitnehmen.",
+              "Online habe ich das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) entdeckt. Da ich lieber lokal bei Ihnen im Markt einkaufe statt online zu bestellen, wünsche ich mir das Produkt sehr für Ihr Tiefkühlregal."
             ]
           },
           {
             id: "distance",
             label: "🚗 Fahre aktuell extra weit zu einem anderen Markt",
             middleVariants: [
-              "Aktuell muss ich für das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro) extra einen weiten Weg auf mich nehmen, würde es aber viel lieber direkt bei meinem Stammeinkauf in Ihrer Filiale kaufen.",
-              "Ich kaufe das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) sehr regelmäßig, muss dafür momentan aber immer umständlich weiter weg fahren. Es wäre großartig, wenn Sie es direkt bei sich im Markt listen könnten.",
-              "Um 'Not Egg' (https://not-egg.de, Hersteller: Vegitaro) für die Tiefkühltruhe zu bekommen, nehme ich derzeit noch längere Fahrten in Kauf. Viel lieber würde ich meinen gesamten Einkauf inklusive Not Egg direkt bei Ihnen erledigen.",
-              "Da 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro) für mich fest zum Speiseplan gehört, fahre ich dafür aktuell noch extra in andere Läden. Wenn Sie das Tiefkühlprodukt aufnehmen, kaufe ich es ab sofort direkt in Ihrer Filiale."
+              "Aktuell muss ich für das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) extra einen weiten Weg auf mich nehmen, würde es aber viel lieber direkt bei meinem Stammeinkauf in Ihrer Filiale kaufen.",
+              "Ich kaufe das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) sehr regelmäßig, muss dafür momentan aber immer umständlich weiter weg fahren. Es wäre großartig, wenn Sie es direkt bei sich im Markt listen könnten.",
+              "Um 'Not Egg' (https://not-egg.de) für die Tiefkühltruhe zu bekommen, nehme ich derzeit noch längere Fahrten in Kauf. Viel lieber würde ich meinen gesamten Einkauf inklusive Not Egg direkt bei Ihnen erledigen.",
+              "Da 'Not Egg' (https://not-egg.de) für mich fest zum Speiseplan gehört, fahre ich dafür aktuell noch extra in andere Läden. Wenn Sie das Tiefkühlprodukt aufnehmen, kaufe ich es ab sofort direkt in Ihrer Filiale."
             ]
           },
           {
             id: "taste",
             label: "🍳 Auf der VeggieWorld probiert & begeistert",
             middleVariants: [
-              "Auf der VeggieWorld konnte ich 'Not Egg' (https://not-egg.de vom Bremer Hersteller Vegitaro) probieren – ein pflanzliches Spiegelei für die Tiefkühlabteilung, das optisch und geschmacklich absolut überzeugt.",
-              "Kürzlich habe ich auf der VeggieWorld das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) entdeckt. Sowohl die Konsistenz als auch das flüssige Eigelb auf Pflanzenbasis haben mich begeistert.",
-              "Durch die Messe VeggieWorld bin ich auf 'Not Egg' (https://not-egg.de, Hersteller: Vegitaro) aufmerksam geworden. Es handelt sich um ein pflanzliches Spiegelei aus dem Tiefkühlbereich, das ich seitdem im Supermarkt suche.",
-              "Ich habe auf der VeggieWorld das pflanzliche Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) getestet und war begeistert, wie authentisch es in der Pfanne gelingt. Es wird als Tiefkühlprodukt angeboten."
+              "Auf der VeggieWorld konnte ich 'Not Egg' (https://not-egg.de) probieren – ein pflanzliches Spiegelei für die Tiefkühlabteilung, das optisch und geschmacklich absolut überzeugt.",
+              "Kürzlich habe ich auf der VeggieWorld das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) entdeckt. Sowohl die Konsistenz als auch das flüssige Eigelb auf Pflanzenbasis haben mich begeistert.",
+              "Durch die Messe VeggieWorld bin ich auf 'Not Egg' (https://not-egg.de) aufmerksam geworden. Es handelt sich um ein pflanzliches Spiegelei aus dem Tiefkühlbereich, das ich seitdem im Supermarkt suche.",
+              "Ich habe auf der VeggieWorld das pflanzliche Spiegelei 'Not Egg' (https://not-egg.de) getestet und war begeistert, wie authentisch es in der Pfanne gelingt. Es wird als Tiefkühlprodukt angeboten."
             ]
           },
           {
-            id: "demand",
-            label: "🌱 Große Nachfrage im Freundes- & Familienkreis",
+            id: "restock",
+            label: "🔄 Markt führt es schon: Fragen ob vorrätig / ausverkauft",
             middleVariants: [
-              "In meinem Freundes- und Familienkreis fragen gerade viele nach 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro) – einem pflanzlichen Spiegelei für die Tiefkühltruhe, das hier in der Umgebung leider noch fehlt.",
-              "Immer mehr Menschen in meinem Umfeld greifen zu pflanzlichen Alternativen. Das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) steht dabei ganz oben auf unserer gemeinsamen Einkaufsliste.",
-              "Gemeinsam mit einigen Bekannten aus der Nachbarschaft halte ich Ausschau nach dem pflanzlichen Spiegelei 'Not Egg' (https://not-egg.de, Hersteller: Vegitaro) für die Tiefkühlabteilung.",
-              "Da mehrere Personen in meinem Haushalt und Freundeskreis sehr gerne 'Not Egg' (https://not-egg.de vom Bremer Hersteller Vegitaro) kaufen würden, möchte ich das Tiefkühlprodukt für Ihr Sortiment vorschlagen."
+              "Auf https://not-egg.de/bezugsquellen/ habe ich gesehen, dass Ihr Markt das pflanzliche Tiefkühl-Spiegelei 'Not Egg' bereits im Sortiment führt! Ich wollte kurz nachfragen, ob das Produkt aktuell in Ihrer Tiefkühltruhe vorrätig ist oder wann die nächste Lieferung eintrifft.",
+              "Es freut mich riesig, dass Ihre Filiale bereits als offizielle Bezugsquelle für das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) gelistet ist. Könnten Sie mir kurz mitteilen, in welcher Tiefkühltruhe ich es bei Ihnen finde bzw. ob es gerade auf Lager ist?",
+              "Da Ihr Markt laut Hersteller-Website bereits das pflanzliche Spiegelei 'Not Egg' anbietet, wollte ich mich vor meinem nächsten Einkauf kurz erkundigen, ob aktuell noch Packungen im Tiefkühlbereich verfügbar sind oder ob es derzeit ausverkauft ist.",
+              "Vielen Dank, dass Sie das vegane Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) bereits in Ihrem Markt aufgenommen haben! Ich konnte es beim letzten Mal in der Tiefkühlabteilung nicht direkt entdecken – ist es aktuell vorrätig oder bereits nachbestellt?"
             ]
           }
         ],
@@ -227,24 +314,29 @@
           "Produktwunsch für Ihre Filiale ({{market_name}}) – Veganes Ei 'Not Egg'",
           "Anfrage zum TK-Sortiment bei {{market_name}} ({{market_street}}): Not Egg"
         ],
+        restockSubjects: [
+          "Verfügbarkeitsanfrage für {{market_name}}: Pflanzliches Spiegelei 'Not Egg' (TK)",
+          "Kurze Nachfrage ({{market_street}}): Ist 'Not Egg' aktuell im Tiefkühlregal vorrätig?",
+          "Kundenfrage zu 'Not Egg' in Ihrer Filiale ({{market_name}})"
+        ],
         blocks: {
           intro: [
             "Hallo liebes Team vom {{market_name}},\n\nich kaufe regelmäßig bei Ihnen in der Filiale ({{market_street}}) ein und wende mich heute mit einer kurzen Anfrage an Sie.",
-            "Guten Tag,\n\nals Kundin bzw. Kunde Ihres Marktes ({{market_name}}, {{market_street}}) habe ich einen konkreten Produktwunsch für Ihre Tiefkühlabteilung.",
-            "Liebes Team von {{market_name}},\n\nda ich meine Einkäufe sehr gerne bei Ihnen in der {{market_street}} erledige, möchte ich eine Anregung für Ihr Sortiment weitergeben.",
+            "Guten Tag,\n\nals Kundin bzw. Kunde Ihres Marktes ({{market_name}}, {{market_street}}) habe ich ein kurzes Anliegen zu Ihrer Tiefkühlabteilung.",
+            "Liebes Team von {{market_name}},\n\nda ich meine Einkäufe sehr gerne bei Ihnen in der Filiale ({{market_street}}) erledige, möchte ich Ihnen heute kurz schreiben.",
             "Hallo und guten Tag,\n\nich besuche Ihren Markt ({{market_name}}, {{market_street}}) regelmäßig und schätze Ihr bestehendes Angebot an pflanzlichen Produkten sehr."
           ],
           impact: [
-            "Bei einer Aufnahme in Ihrer Filiale ({{market_street}}) würde ich das Produkt regelmäßig bei meinem Einkauf mitnehmen.",
-            "Für Ihr Tiefkühlregal wäre das eine tolle Ergänzung, über die sich sicher auch viele weitere Kundinnen und Kunden in der Umgebung freuen würden.",
+            "Bei uns im Haushalt steht das Produkt fest auf der Einkaufsliste, sodass wir es in Ihrer Filiale ({{market_street}}) regelmäßig mitnehmen würden.",
+            "Für Ihr Tiefkühlregal ist das eine tolle Bereicherung, über die sich auch viele weitere Kundinnen und Kunden in der Umgebung freuen.",
             "Da das Produkt tiefgekühlt lange haltbar ist, passt es hervorragend in eine gut sortierte Tiefkühlabteilung.",
-            "Eine Bestellung bzw. Anfrage ist über das Regionallager oder direkt beim Hersteller Vegitaro (info@vegitaro.de) möglich."
+            "Alle Informationen zur Bestellung für Märkte finden Sie direkt unter https://not-egg.de bzw. über info@vonher.de."
           ],
           outro: [
-            "Könnten Sie bitte prüfen, ob Sie 'Not Egg' in Ihrer Filiale ({{market_street}}) ins Sortiment aufnehmen können? Über eine kurze Rückmeldung freue ich mich sehr!\n\nViele Grüße\n{{user_name}}",
-            "Es wäre klasse, wenn Sie diesen Wunsch an die Marktleitung bzw. den zuständigen Einkauf weiterleiten könnten. Vielen Dank für Ihre Mühe!\n\nBeste Grüße\n{{user_name}}",
-            "Ich würde mich sehr freuen, 'Not Egg' bald bei Ihnen in der Tiefkühltruhe zu finden. Vielen Dank vorab für die Prüfung!\n\nFreundliche Grüße\n{{user_name}}",
-            "Geben Sie mir gerne kurz Bescheid, ob eine Bestellung für Ihren Markt möglich ist. Vielen Dank!\n\nHerzliche Grüße\n{{user_name}}"
+            "Über eine kurze Rückmeldung aus Ihrer Filiale ({{market_street}}) freue ich mich sehr!\n\nViele Grüße\n{{user_name}}",
+            "Es wäre klasse, wenn Sie diese Nachricht kurz an die Marktleitung bzw. das zuständige Team weiterleiten könnten. Vielen Dank für Ihre Mühe!\n\nBeste Grüße\n{{user_name}}",
+            "Vielen Dank vorab für Ihre Zeit und die kurze Prüfung!\n\nFreundliche Grüße\n{{user_name}}",
+            "Geben Sie mir gerne kurz Bescheid. Vielen Dank für Ihren tollen Kundenservice!\n\nHerzliche Grüße\n{{user_name}}"
           ]
         }
       },
@@ -321,6 +413,7 @@
     let currentCamp = null;
     let currentTopicIndex = 0;
     let activeMarkets = [];
+    let isManualMode = false;
     let selectedIndices = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0 };
 
     function initApp() {
@@ -355,6 +448,8 @@
       currentCampKey = key;
       currentCamp = CAMPAIGNS[key];
       currentTopicIndex = 0;
+      isManualMode = false;
+      document.getElementById("manual-market-box").classList.add("hidden");
 
       Object.keys(CAMPAIGNS).forEach(function(k) {
         var b = document.getElementById("switch-btn-" + k);
@@ -380,6 +475,23 @@
 
       renderTopicButtons();
       rollNewCombination();
+    }
+
+    function toggleManualMarket() {
+      var box = document.getElementById("manual-market-box");
+      var dropWrap = document.getElementById("dropdown-wrapper");
+      var btn = document.getElementById("manual-toggle-btn");
+      isManualMode = !isManualMode;
+      if (isManualMode) {
+        box.classList.remove("hidden");
+        dropWrap.classList.add("hidden");
+        btn.innerText = "Zurück zur automatischen Markt-Liste";
+      } else {
+        box.classList.add("hidden");
+        dropWrap.classList.remove("hidden");
+        btn.innerText = "Dein Markt fehlt in der Liste? Hier manuell eingeben";
+      }
+      renderEmail();
     }
 
     function renderTopicButtons() {
@@ -425,7 +537,8 @@
       list.forEach(function(m, idx) {
         var opt = document.createElement("option");
         opt.value = idx;
-        opt.text = m.name + " 📍 " + m.street;
+        var prefix = m.hasNotEgg ? "🎉 [Hat Not-Egg!] " : "";
+        opt.text = prefix + m.name + " 📍 " + m.street;
         select.appendChild(opt);
       });
       onMarketChange();
@@ -438,6 +551,7 @@
         document.getElementById("detail-name").innerText = m.name;
         document.getElementById("detail-brand").innerText = m.brand;
         document.getElementById("detail-address").innerText = "📍 Adresse: " + m.street;
+        
         var extraParts = [];
         if (m.operator) extraParts.push("Betreiber: " + m.operator);
         if (m.hours) extraParts.push("🕒 " + m.hours);
@@ -447,6 +561,26 @@
           extraEl.classList.remove("hidden");
         } else {
           extraEl.classList.add("hidden");
+        }
+
+        // Prüfen, ob dieser Markt laut not-egg.de/bezugsquellen das Produkt schon hat!
+        var listedBanner = document.getElementById("already-listed-banner");
+        var restockTopicIndex = currentCamp.topics.findIndex(function(t) { return t.id === "restock"; });
+
+        if (m.hasNotEgg) {
+          listedBanner.classList.remove("hidden");
+          if (restockTopicIndex !== -1 && currentTopicIndex !== restockTopicIndex) {
+            currentTopicIndex = restockTopicIndex;
+            renderTopicButtons();
+            selectedIndices.middle = 0;
+          }
+        } else {
+          listedBanner.classList.add("hidden");
+          if (currentTopicIndex === restockTopicIndex) {
+            currentTopicIndex = 0;
+            renderTopicButtons();
+            selectedIndices.middle = 0;
+          }
         }
       }
       renderEmail();
@@ -490,6 +624,33 @@
       }
     }
 
+    // Schnelle Overpass-Abfrage (Exaktes Tag-Matching statt langsamem Full-Scan)
+    async function queryOverpassRadius(lat, lon, radiusMeters) {
+      var overpassQuery = '[out:json][timeout:8];(' +
+        'nwr["shop"="supermarket"]["brand"~"^(REWE|EDEKA|Rewe|Edeka)"](around:' + radiusMeters + ',' + lat + ',' + lon + ');' +
+        'nwr["shop"="supermarket"]["name"~"^(REWE|EDEKA|Rewe|Edeka)"](around:' + radiusMeters + ',' + lat + ',' + lon + ');' +
+        ');out center tags;';
+
+      var endpoints = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter",
+        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+      ];
+
+      for (var i = 0; i < endpoints.length; i++) {
+        try {
+          var ovRes = await fetchWithTimeout(endpoints[i], {
+            method: "POST",
+            body: "data=" + encodeURIComponent(overpassQuery)
+          }, 8000);
+          if (ovRes.ok) {
+            return await ovRes.json();
+          }
+        } catch (e) {}
+      }
+      return null;
+    }
+
     async function searchGermanyMarkets() {
       var query = document.getElementById("zip-input").value.trim();
       var btn = document.getElementById("search-btn");
@@ -500,69 +661,91 @@
         return;
       }
 
+      isManualMode = false;
+      document.getElementById("manual-market-box").classList.add("hidden");
+      document.getElementById("dropdown-wrapper").classList.remove("hidden");
+
       btn.disabled = true;
       btn.innerText = "Lädt...";
       document.getElementById("search-status").classList.add("hidden");
 
-      setProgress("Schritt 1/3: Prüfe gespeicherte Märkte...", 15);
+      // Schritt 1: Lokale DB & offizielle Bezugsquellen durchsuchen (20%)
+      setProgress("Schritt 1/3: Prüfe bekannte Märkte & Bezugsquellen...", 20);
+      var qLower = query.toLowerCase();
+
+      var stockistMatches = NOT_EGG_STOCKISTS.filter(function(m) {
+        return m.zip.toLowerCase().indexOf(qLower) !== -1 ||
+               m.street.toLowerCase().indexOf(qLower) !== -1 ||
+               m.name.toLowerCase().indexOf(qLower) !== -1;
+      });
+
       var localMatches = CUSTOM_MARKETS.filter(function(m) {
-        return m.zip.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
-               m.street.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
-               m.name.toLowerCase().indexOf(query.toLowerCase()) !== -1;
+        return m.zip.toLowerCase().indexOf(qLower) !== -1 ||
+               m.street.toLowerCase().indexOf(qLower) !== -1 ||
+               m.name.toLowerCase().indexOf(qLower) !== -1;
       });
 
       try {
-        setProgress("Schritt 2/3: Ermittle Standort für '" + query + "'...", 40);
-        var geoUrl = "https://nominatim.openstreetmap.org/search?format=json&countrycodes=de&limit=1&q=" + encodeURIComponent(query);
-        var geoRes = await fetchWithTimeout(geoUrl, { headers: { "Accept-Language": "de" } }, 5000);
-        if (!geoRes.ok) throw new Error("Standort-Server antwortet nicht (HTTP " + geoRes.status + ")");
-        var geoData = await geoRes.json();
+        // Schritt 2: Koordinaten über Photon (Komoot) oder Nominatim holen (45%)
+        setProgress("Schritt 2/3: Ermittle Koordinaten für '" + query + "'...", 45);
+        var lat = null;
+        var lon = null;
 
-        if (!geoData || geoData.length === 0) {
+        try {
+          var photonUrl = "https://photon.komoot.io/api/?q=" + encodeURIComponent(query + " Deutschland") + "&limit=3";
+          var pRes = await fetchWithTimeout(photonUrl, {}, 4000);
+          if (pRes.ok) {
+            var pData = await pRes.json();
+            if (pData && pData.features && pData.features.length > 0) {
+              var coords = pData.features[0].geometry.coordinates;
+              lon = coords[0];
+              lat = coords[1];
+            }
+          }
+        } catch (e) {}
+
+        if (lat === null) {
+          var geoUrl = "https://nominatim.openstreetmap.org/search?format=json&countrycodes=de&limit=1&q=" + encodeURIComponent(query);
+          var geoRes = await fetchWithTimeout(geoUrl, { headers: { "Accept-Language": "de" } }, 5000);
+          if (geoRes.ok) {
+            var geoData = await geoRes.json();
+            if (geoData && geoData.length > 0) {
+              lat = parseFloat(geoData[0].lat);
+              lon = parseFloat(geoData[0].lon);
+            }
+          }
+        }
+
+        if (lat === null || lon === null) {
           hideProgress();
-          showStatus("⚠️ PLZ oder Ort '" + query + "' wurde in Deutschland nicht gefunden. Bitte prüfe die Eingabe.", true);
+          showStatus("⚠️ PLZ oder Ort '" + query + "' wurde in Deutschland nicht gefunden. Bitte prüfe die Schreibweise.", true);
           btn.disabled = false;
           btn.innerText = "Suchen";
           return;
         }
 
-        var lat = parseFloat(geoData[0].lat);
-        var lon = parseFloat(geoData[0].lon);
+        // Schritt 3: Schnelle Umkreissuche (75%)
+        setProgress("Schritt 3/3: Suche echte REWE & EDEKA Märkte im Umkreis...", 75);
+        var data = await queryOverpassRadius(lat, lon, 7000);
 
-        setProgress("Schritt 3/3: Lade REWE & EDEKA Filialen im Umkreis...", 75);
-        var overpassQuery = '[out:json][timeout:7];(' +
-          'nwr["shop"="supermarket"]["brand"~"REWE|EDEKA|Rewe|Edeka",i](around:5500,' + lat + ',' + lon + ');' +
-          'nwr["shop"="supermarket"]["name"~"REWE|EDEKA|Rewe|Edeka",i](around:5500,' + lat + ',' + lon + ');' +
-          ');out center tags;';
-
-        var endpoints = [
-          "https://overpass.private.coffee/api/interpreter",
-          "https://overpass-api.de/api/interpreter"
-        ];
-
-        var data = null;
-        for (var i = 0; i < endpoints.length; i++) {
-          try {
-            var ovRes = await fetchWithTimeout(endpoints[i], {
-              method: "POST",
-              body: "data=" + encodeURIComponent(overpassQuery)
-            }, 6500);
-            if (ovRes.ok) {
-              data = await ovRes.json();
-              break;
-            }
-          } catch (e) {}
+        // Falls ländliches Gebiet (z.B. 59846 Sundern) im 7-km-Radius leer ist -> automatisch auf 15 km erweitern!
+        if (data && (!data.elements || data.elements.length === 0)) {
+          setProgress("Ländliche Region erkannt – erweitere Suchradius auf 15 km...", 88);
+          data = await queryOverpassRadius(lat, lon, 15000);
         }
-
-        if (!data) {
-          throw new Error("Karten-Server aktuell ausgelastet (Zeitüberschreitung nach 6 Sek.).");
-        }
-
-        setProgress("Verarbeite Adressen & Details...", 95);
 
         var fetchedMarkets = [];
         var seenKeys = {};
-        localMatches.forEach(function(m) { seenKeys[(m.name + m.street).toLowerCase()] = true; });
+
+        var preCombined = stockistMatches.concat(localMatches);
+        var uniquePre = [];
+        preCombined.forEach(function(m) {
+          var k = (m.brand + "_" + m.street.substring(0, 12)).toLowerCase();
+          if (!seenKeys[k]) {
+            seenKeys[k] = true;
+            uniquePre.push(m);
+          }
+        });
 
         var isZip = /^\d{5}$/.test(query);
 
@@ -574,12 +757,17 @@
             
             var street = tags["addr:street"] || "";
             var housenumber = tags["addr:housenumber"] || "";
-            var postcode = tags["addr:postcode"] || (isZip ? query : "");
-            var city = tags["addr:city"] || "";
+            var postcode = tags["addr:postcode"] || "";
+            var city = tags["addr:city"] || tags["addr:town"] || tags["addr:village"] || "";
             var suburb = tags["addr:suburb"] || tags["addr:quarter"] || "";
             var operator = tags["operator"] || tags["branch"] || "";
             var hours = tags["opening_hours"] || "";
             var contactEmail = tags["contact:email"] || tags["email"] || "";
+
+            // WICHTIG: Verhindere Geister-Märkte ohne Orts-/Straßenangabe!
+            if (!street && !city && !suburb && !operator) {
+              return;
+            }
 
             var displayName = rawName;
             if (tags["branch"] && displayName.indexOf(tags["branch"]) === -1) {
@@ -587,33 +775,28 @@
             }
 
             var streetPart = (street + " " + housenumber).trim();
-            var cityPart = (postcode + " " + city).trim();
+            var cityPart = ((postcode || (isZip ? query : "")) + " " + (city || (!isZip ? query : ""))).trim();
             if (suburb && cityPart.indexOf(suburb) === -1) {
               cityPart += " (" + suburb + ")";
             }
 
-            var fullAddress = "";
-            if (streetPart && cityPart) {
-              fullAddress = streetPart + ", " + cityPart;
-            } else if (streetPart) {
-              fullAddress = streetPart + ", " + query;
-            } else if (cityPart) {
-              fullAddress = cityPart;
-            } else {
-              fullAddress = "Umkreis " + query;
-            }
+            var fullAddress = (streetPart && cityPart) 
+              ? (streetPart + ", " + cityPart) 
+              : (streetPart || cityPart);
 
-            var uniqueKey = (displayName + fullAddress).toLowerCase();
-            if (!seenKeys[uniqueKey]) {
-              seenKeys[uniqueKey] = true;
+            var dedupKey = (brand + "_" + fullAddress.substring(0, 12)).toLowerCase();
+            if (!seenKeys[dedupKey]) {
+              seenKeys[dedupKey] = true;
+              var alreadyListed = checkIfStockist(postcode || query, displayName, fullAddress);
               fetchedMarkets.push({
-                zip: postcode || query,
+                zip: postcode || (isZip ? query : ""),
                 brand: brand,
                 name: displayName,
                 street: fullAddress,
                 operator: operator,
                 hours: hours,
-                email: contactEmail
+                email: contactEmail,
+                hasNotEgg: alreadyListed
               });
             }
           });
@@ -622,35 +805,34 @@
         fetchedMarkets.sort(function(a, b) {
           var aExact = a.zip === query ? 0 : 1;
           var bExact = b.zip === query ? 0 : 1;
-          if (aExact !== bExact) return aExact - bExact;
-          var aHasStreet = a.street.indexOf("Umkreis") === -1 ? 0 : 1;
-          var bHasStreet = b.street.indexOf("Umkreis") === -1 ? 0 : 1;
-          return aHasStreet - bHasStreet;
+          return aExact - bExact;
         });
 
-        var combined = localMatches.concat(fetchedMarkets);
+        var finalMarkets = uniquePre.concat(fetchedMarkets);
         hideProgress();
 
-        if (combined.length > 0) {
-          activeMarkets = combined;
-          showStatus("✅ " + combined.length + " REWE & EDEKA Märkte im Umkreis von '" + query + "' geladen!", false);
+        if (finalMarkets.length > 0) {
+          activeMarkets = finalMarkets;
+          var stockistCount = finalMarkets.filter(function(m) { return m.hasNotEgg; }).length;
+          var extraInfo = stockistCount > 0 ? " (davon " + stockistCount + "x bereits mit Not-Egg!)" : "";
+          showStatus("✅ " + finalMarkets.length + " echte Märkte für '" + query + "' gefunden" + extraInfo, false);
+          populateMarketDropdown(activeMarkets);
         } else {
-          activeMarkets = [
-            { zip: query, brand: "REWE", name: "REWE Markt (" + query + ")", street: "Standort " + query, operator: "", hours: "", email: "" },
-            { zip: query, brand: "EDEKA", name: "EDEKA Markt (" + query + ")", street: "Standort " + query, operator: "", hours: "", email: "" }
-          ];
-          showStatus("ℹ️ Keine Einzeladresse in der Karte verzeichnet – allgemeine Auswahl für '" + query + "' erstellt.", true);
+          // KEINE FIKTIVEN MÄRKTE ERFINDEN! Stattdessen ehrlicher Hinweis + Manuelles Feld öffnen
+          showStatus("ℹ️ In '" + query + "' wurden keine REWE- oder EDEKA-Märkte gefunden. Bitte prüfe die Nachbar-PLZ oder trage deinen Markt unten manuell ein.", true);
+          toggleManualMarket();
         }
-        populateMarketDropdown(activeMarkets);
 
       } catch (err) {
         hideProgress();
-        activeMarkets = localMatches.length ? localMatches : [
-          { zip: query, brand: "REWE", name: "REWE Markt (" + query + ")", street: "Standort " + query, operator: "", hours: "", email: "" },
-          { zip: query, brand: "EDEKA", name: "EDEKA Markt (" + query + ")", street: "Standort " + query, operator: "", hours: "", email: "" }
-        ];
-        showStatus("⚠️ Live-Suche fehlgeschlagen (" + (err.message || "Verbindungsfehler") + "). Wir haben ersatzweise den Standort '" + query + "' direkt voreingestellt.", true);
-        populateMarketDropdown(activeMarkets);
+        if (uniquePre && uniquePre.length > 0) {
+          activeMarkets = uniquePre;
+          showStatus("✅ " + activeMarkets.length + " gespeicherte Märkte für '" + query + "' geladen.", false);
+          populateMarketDropdown(activeMarkets);
+        } else {
+          showStatus("ℹ️ Kartendienst momentan langsam. Bitte wähle deinen Markt über die manuelle Eingabe unten aus.", true);
+          if (!isManualMode) toggleManualMarket();
+        }
       } finally {
         btn.disabled = false;
         btn.innerText = "Suchen";
@@ -667,23 +849,35 @@
       var ccEmail = currentCamp.cc || "";
       var marketName = "";
       var marketStreet = "";
+      var isAlreadyStockist = false;
 
       if (currentCamp.mode === "local") {
-        var select = document.getElementById("market-select");
-        var market = activeMarkets[select.value] || activeMarkets[0];
-        marketName = market.name;
-        marketStreet = market.street;
-
-        var corporateEmail = market.brand === "EDEKA" 
-          ? getEdekaRegionalEmail(market.zip) 
-          : "kundenmanagement@rewe.de";
-
-        if (market.email) {
-          toEmail = market.email;
-          ccEmail = corporateEmail;
+        if (isManualMode) {
+          var mBrand = document.getElementById("manual-brand").value;
+          marketName = document.getElementById("manual-name").value.trim() || (mBrand + " Markt");
+          marketStreet = document.getElementById("manual-street").value.trim() || "[Straße & Ort eintragen]";
+          var zipMatch = marketStreet.match(/\b(\d{5})\b/);
+          var extractedZip = zipMatch ? zipMatch[1] : document.getElementById("zip-input").value.trim();
+          toEmail = mBrand === "EDEKA" ? getEdekaRegionalEmail(extractedZip) : "kundenmanagement@rewe.de";
+          ccEmail = (mBrand === "EDEKA" && toEmail !== "info@edeka.de") ? "info@edeka.de" : "";
         } else {
-          toEmail = corporateEmail;
-          ccEmail = market.brand === "EDEKA" && corporateEmail !== "info@edeka.de" ? "info@edeka.de" : "";
+          var select = document.getElementById("market-select");
+          var market = activeMarkets[select.value] || activeMarkets[0];
+          marketName = market.name;
+          marketStreet = market.street;
+          isAlreadyStockist = !!market.hasNotEgg;
+
+          var corporateEmail = market.brand === "EDEKA" 
+            ? getEdekaRegionalEmail(market.zip) 
+            : "kundenmanagement@rewe.de";
+
+          if (market.email) {
+            toEmail = market.email;
+            ccEmail = corporateEmail;
+          } else {
+            toEmail = corporateEmail;
+            ccEmail = market.brand === "EDEKA" && corporateEmail !== "info@edeka.de" ? "info@edeka.de" : "";
+          }
         }
       }
 
@@ -694,8 +888,14 @@
         return res;
       }
 
-      var middleVariants = currentCamp.topics[currentTopicIndex].middleVariants;
-      var rawSubject = currentCamp.subjects[selectedIndices.subject] || currentCamp.subjects[0];
+      var currentTopicObj = currentCamp.topics[currentTopicIndex] || currentCamp.topics[0];
+      var middleVariants = currentTopicObj.middleVariants;
+      
+      var subjectPool = (currentTopicObj.id === "restock" && currentCamp.restockSubjects)
+        ? currentCamp.restockSubjects
+        : currentCamp.subjects;
+
+      var rawSubject = subjectPool[selectedIndices.subject % subjectPool.length] || subjectPool[0];
       var rawBody = [
         currentCamp.blocks.intro[selectedIndices.intro] || currentCamp.blocks.intro[0],
         middleVariants[selectedIndices.middle] || middleVariants[0],
