@@ -3,145 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VeganVoice – Deine Stimme in 30 Sekunden</title>
+  <title>VeganMail-O-Mat</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { -webkit-tap-highlight-color: transparent; }
-    .fade-in { animation: fadeIn 0.25s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen py-4 px-3 sm:p-6 font-sans text-slate-800">
 
-  <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+  <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
     
-    <!-- Top-Leiste zum schnellen Testen / Wechseln der Kampagnen (Wird ausgeblendet, wenn URL-Parameter ?c=... gesetzt ist) -->
-    <div id="campaign-switcher" class="bg-slate-900 text-white px-4 py-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
-      <span class="text-slate-400 font-medium">Aktive Kampagne wählen:</span>
+    <!-- Kampagnen-Umschalter (wird automatisch ausgeblendet, wenn ?c= in der URL steht) -->
+    <div id="campaign-switcher" class="bg-slate-900 text-white px-4 py-2 text-xs flex items-center justify-between gap-2">
+      <span class="text-slate-400">Aktion:</span>
       <div class="flex gap-1.5" id="switcher-buttons"></div>
     </div>
 
-    <div class="p-5 sm:p-7">
-      <!-- Kampagnen-Kopf -->
-      <div class="inline-block px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 mb-2" id="camp-badge">Aktion</div>
-      <h1 id="camp-title" class="text-2xl font-extrabold text-slate-900 leading-tight mb-2"></h1>
-      <p id="camp-desc" class="text-slate-600 text-sm leading-relaxed mb-6"></p>
+    <div class="p-5 sm:p-6">
+      <h1 id="camp-title" class="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight mb-1.5"></h1>
+      <p id="camp-desc" class="text-slate-600 text-sm leading-relaxed mb-5"></p>
 
-      <!-- ================================================================= -->
-      <!-- MODUS 'LOCAL': DEUTSCHLANDWEITE REWE / EDEKA SUCHE                -->
-      <!-- ================================================================= -->
-      <div id="local-search-section" class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 hidden">
+      <!-- SCHRITT 1: SUPERMARKT-SUCHE (Nur bei 'local') -->
+      <div id="local-search-section" class="mb-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 hidden">
         <label class="block text-sm font-bold text-slate-800 mb-1.5">
-          1. Wo kaufst du ein? (PLZ oder Ort in Deutschland)
+          Wo kaufst du ein? (PLZ oder Ort)
         </label>
-        <div class="flex gap-2 mb-3">
-          <input type="text" id="zip-input" placeholder="z.B. 40667, Berlin, 28195..." 
+        <div class="flex gap-2 mb-2.5">
+          <input type="text" id="zip-input" placeholder="z.B. 40667, Berlin..." 
                  onkeydown="if(event.key==='Enter') searchGermanyMarkets()"
-                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                 class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
           <button onclick="searchGermanyMarkets()" id="search-btn" 
-                  class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-sm font-bold shrink-0 transition shadow-sm">
-            🔍 Suchen
+                  class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shrink-0 transition">
+            Suchen
           </button>
         </div>
 
         <div id="search-status" class="text-xs text-slate-500 mb-2 hidden"></div>
 
-        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Gefundene Märkte auswählen:</label>
         <select id="market-select" onchange="onMarketChange()" 
-                class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </select>
-        <div id="routing-badge" class="mt-2 text-xs px-2.5 py-1.5 rounded-lg bg-slate-200/70 text-slate-600 leading-snug"></div>
       </div>
 
-      <!-- ================================================================= -->
-      <!-- SCHRITT 2: THEMEN- / SCHWERPUNKT-WAHL (2+ Themen pro Kampagne)    -->
-      <!-- ================================================================= -->
-      <div id="topic-section" class="mb-6">
+      <!-- SCHRITT 2: WAS SOLL IN DIE E-MAIL? -->
+      <div id="topic-section" class="mb-5">
         <label class="block text-sm font-bold text-slate-800 mb-2" id="topic-label">
-          Welcher Punkt ist dir besonders wichtig?
+          Was soll in die E-Mail?
         </label>
-        <div id="topic-buttons" class="grid grid-cols-1 gap-2">
-          <!-- Wird dynamisch aus den Topics der Kampagne gefüllt -->
-        </div>
+        <div id="topic-buttons" class="grid grid-cols-1 gap-2"></div>
       </div>
 
-      <!-- ================================================================= -->
-      <!-- SCHRITT 3: ABSENDER-NAME                                          -->
-      <!-- ================================================================= -->
-      <div class="mb-6">
+      <!-- SCHRITT 3: NAME -->
+      <div class="mb-5">
         <label class="block text-sm font-bold text-slate-800 mb-1.5">
-          Dein Name (für die Unterschrift unter der E-Mail)
+          Dein Name
         </label>
-        <input type="text" id="user-name" placeholder="Vor- und Nachname eingeben..." 
+        <input type="text" id="user-name" placeholder="Vor- und Nachname..." 
                oninput="renderEmail()" 
-               class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+               class="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
       </div>
 
-      <!-- ================================================================= -->
-      <!-- SCHRITT 4: E-MAIL VORSCHAU & BAUSTEIN-MIXER                       -->
-      <!-- ================================================================= -->
-      <div class="mb-6">
+      <!-- SCHRITT 4: E-MAIL VORSCHAU -->
+      <div class="mb-5">
         <div class="flex justify-between items-center mb-2">
-          <label class="text-sm font-bold text-slate-800">Deine fertige E-Mail (frei anpassbar)</label>
+          <label class="text-sm font-bold text-slate-800">Deine E-Mail</label>
           <button onclick="rollNewCombination()" 
-                  class="text-xs bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition shadow-sm">
-            🎲 Neu kombinieren
+                  class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg font-bold transition">
+            🎲 Neu würfeln
           </button>
         </div>
 
-        <!-- Empfänger & Betreff Box -->
-        <div class="bg-slate-50 border border-slate-200 rounded-t-xl p-3 border-b-0 space-y-1.5">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-500 font-medium">An: <strong id="preview-to" class="font-mono text-slate-800"></strong></span>
+        <div class="bg-slate-50 border border-slate-300 rounded-t-xl p-2.5 border-b-0 space-y-1">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>An: <strong id="preview-to" class="font-mono text-slate-800"></strong></span>
             <span id="preview-cc-wrap" class="text-slate-400 font-mono hidden">CC: <span id="preview-cc"></span></span>
           </div>
-          <div class="pt-1 border-t border-slate-200/80">
-            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Betreff (bearbeitbar):</span>
+          <div class="pt-1 border-t border-slate-200">
             <input type="text" id="preview-subject" 
                    oninput="updateMailtoLink()"
-                   class="w-full bg-transparent font-bold text-sm text-slate-900 focus:outline-none mt-0.5">
+                   class="w-full bg-transparent font-bold text-sm text-slate-900 focus:outline-none">
           </div>
         </div>
 
-        <!-- E-Mail Textkörper -->
-        <textarea id="preview-body" rows="10" 
+        <textarea id="preview-body" rows="9" 
                   oninput="updateMailtoLink()"
-                  class="w-full border border-slate-300 rounded-b-xl p-3.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans"></textarea>
-        <p class="text-[11px] text-slate-400 mt-1 text-right">
-          4 Bausteine aktiv • Jede Kombination ergibt einen individuellen Text
-        </p>
+                  class="w-full border border-slate-300 rounded-b-xl p-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans"></textarea>
       </div>
 
-      <!-- ================================================================= -->
-      <!-- SCHRITT 5: 1-KLICK ABSENDEN & EINZEL-KOPIER-BUTTONS               -->
-      <!-- ================================================================= -->
-      <div class="space-y-3">
-        <!-- Echter <a>-Tag verhindert Blockieren durch In-App-Browser (Instagram etc.) -->
+      <!-- SCHRITT 5: ABSENDEN & KOPIEREN -->
+      <div class="space-y-2.5">
         <a id="mailto-btn" href="#" 
-           class="block w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md text-center text-base transition">
-          ✉️ Jetzt in E-Mail-App öffnen & senden
+           class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md text-center text-base transition">
+          ✉️ E-Mail-App öffnen & senden
         </a>
 
-        <!-- Webmail / Manuelles Kopieren für Nutzer ohne eingerichtete Mail-App -->
-        <div class="pt-2">
-          <p class="text-xs text-center text-slate-500 mb-2 font-medium">
-            Öffnet sich deine Mail-App nicht? Direkt kopieren oder Gmail nutzen:
-          </p>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-            <button onclick="copyPart('to', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2.5 rounded-lg border border-slate-200 transition">
-              📋 Empfänger
-            </button>
-            <button onclick="copyPart('subject', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2.5 rounded-lg border border-slate-200 transition">
-              📋 Betreff
-            </button>
-            <button onclick="copyPart('body', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2.5 rounded-lg border border-slate-200 transition">
-              📋 E-Mail-Text
-            </button>
-            <a id="gmail-btn" href="#" target="_blank" rel="noopener" 
-               class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-2 px-2.5 rounded-lg border border-red-200 text-center transition">
-              🌐 In Gmail öffnen
-            </a>
-          </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs pt-1">
+          <button onclick="copyPart('to', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2 rounded-lg border border-slate-200">
+            📋 Empfänger
+          </button>
+          <button onclick="copyPart('subject', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2 rounded-lg border border-slate-200">
+            📋 Betreff
+          </button>
+          <button onclick="copyPart('body', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2 rounded-lg border border-slate-200">
+            📋 Text
+          </button>
+          <a id="gmail-btn" href="#" target="_blank" rel="noopener" 
+             class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-2 px-2 rounded-lg border border-red-200 text-center">
+            🌐 Gmail
+          </a>
         </div>
       </div>
 
@@ -149,10 +118,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // 1. EURE VORAB-DATENBANK FÜR BEKANNTE DIREKT-E-MAILS (Optional erweiterbar)
-    // Wenn ein Markt hier eine 'email' hat, geht die Mail direkt dorthin + Zentrale in CC!
-    // =========================================================================
     const CUSTOM_MARKETS = [
       { zip: "40667", brand: "REWE", name: "REWE Markt Meerbusch-Büderich", street: "Düsseldorfer Str. 10, 40667 Meerbusch", email: "" },
       { zip: "40667", brand: "EDEKA", name: "EDEKA Nettersheim Meerbusch", street: "Moerser Str. 45, 40667 Meerbusch", email: "" },
@@ -162,13 +127,12 @@
       { zip: "10117", brand: "REWE", name: "REWE Markt Berlin Friedrichstraße", street: "Friedrichstr. 100, 10117 Berlin", email: "" }
     ];
 
-    // Automatische Zuordnung der 7 EDEKA-Regionalgesellschaften anhand der ersten 2 PLZ-Ziffern
     function getEdekaRegionalEmail(zipStr) {
       const prefix = parseInt((zipStr || "").substring(0, 2), 10);
       if (isNaN(prefix)) return "info@edeka.de";
       if ((prefix >= 20 && prefix <= 25) || prefix === 18 || prefix === 19) return "kundenservice.nord@edeka.de";
       if ((prefix >= 1 && prefix <= 17) || (prefix >= 26 && prefix <= 33) || prefix === 38 || prefix === 39) return "kundenservice@minden.edeka.de";
-      if (prefix >= 40 && prefix <= 59) return "kundenservice.nordwest@edeka.de"; // EDEKA Rhein-Ruhr / Nordwest
+      if (prefix >= 40 && prefix <= 59) return "kundenservice.nordwest@edeka.de";
       if (prefix >= 34 && prefix <= 37) return "kundenservice@edeka-hessenring.de";
       if (prefix >= 60 && prefix <= 79) return "kundenservice@edeka-suedwest.de";
       if (prefix >= 90 && prefix <= 99) return "kundenservice.nbst@edeka.de";
@@ -176,20 +140,16 @@
       return "info@edeka.de";
     }
 
-    // =========================================================================
-    // 2. KAMPAGNEN-KONFIGURATION (Hier neue Aktionen in 2 Minuten einfügen!)
-    // =========================================================================
     const CAMPAIGNS = {
       "not-egg": {
         mode: "local",
-        badge: "Sortiments-Wunsch • Deutschlandweit",
-        title: "Frag nach dem Gelben! 🍳",
-        description: "Hilf mit, das pflanzliche Spiegelei 'Not Egg' (von Vegitaro) in deinen lokalen REWE oder EDEKA zu bringen. Suche deinen Markt und sende in 30 Sekunden eine persönliche Anfrage!",
-        topicLabel: "2. Welchen Schwerpunkt soll deine Anfrage haben?",
+        title: "Wünsch dir Not-Egg! 🍳",
+        description: "Der 30-Sekunden-Marktfinder: Bring das pflanzliche Spiegelei 'Not Egg' in deinen lokalen REWE oder EDEKA.",
+        topicLabel: "Was soll in die E-Mail?",
         topics: [
           {
             id: "taste",
-            label: "🍳 Fokus: Begeisterung von der VeggieWorld & Geschmack",
+            label: "🍳 Auf der VeggieWorld probiert & begeistert",
             middleVariants: [
               "Auf der VeggieWorld konnte ich 'Not Egg' (https://not-egg.de vom Bremer Hersteller Vegitaro) probieren – ein pflanzliches Spiegelei für die Tiefkühlabteilung, das optisch und geschmacklich absolut verblüfft.",
               "Kürzlich habe ich auf der VeggieWorld das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) entdeckt. Sowohl die Konsistenz als auch das flüssige Eigelb auf Pflanzenbasis haben mich komplett überzeugt.",
@@ -199,7 +159,7 @@
           },
           {
             id: "regular",
-            label: "🛒 Fokus: Wunsch für meinen regelmäßigen Wocheneinkauf",
+            label: "🛒 Wunsch für meinen Wocheneinkauf",
             middleVariants: [
               "Mir fehlt im Tiefkühlsortiment noch eine richtig gute, herzhafte Ei-Alternative. Genau diese Lücke schließt das pflanzliche Spiegelei 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro aus Bremen).",
               "Für meinen regelmäßigen Wocheneinkauf wünsche ich mir das vegane Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de, Hersteller: Vegitaro). Bisher gibt es im Markt zwar Rührei-Alternativen, aber kein echtes pflanzliches Spiegelei.",
@@ -209,10 +169,10 @@
           },
           {
             id: "demand",
-            label: "🌱 Fokus: Hohe Nachfrage im Freundes- und Familienkreis",
+            label: "🌱 Große Nachfrage im Freundeskreis",
             middleVariants: [
               "In meinem Freundes- und Familienkreis sprechen gerade viele über 'Not Egg' (https://not-egg.de vom Hersteller Vegitaro) – ein pflanzliches Spiegelei für die Tiefkühltruhe, das hier in der Gegend leider noch nirgends erhältlich ist.",
-              "Immer mehr Menschen in meinem Umfeld greifen zu pflanzlichen Alternativen, sei es aus ethischen oder gesundheitlichen Gründen. Das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) steht dabei ganz oben auf unserer Wunschliste.",
+              "Immer mehr Menschen in meinem Umfeld greifen zu pflanzlichen Alternativen. Das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de von Vegitaro) steht dabei ganz oben auf unserer Wunschliste.",
               "Gemeinsam mit einigen Bekannten aus der Nachbarschaft halte ich Ausschau nach dem neuen pflanzlichen Spiegelei 'Not Egg' (https://not-egg.de, Hersteller: Vegitaro) für die Tiefkühlabteilung.",
               "Da die Nachfrage nach innovativen pflanzlichen Produkten stetig wächst, möchte ich Ihnen das vegane Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de vom Bremer Hersteller Vegitaro) wärmstens für Ihr Sortiment empfehlen."
             ]
@@ -248,16 +208,15 @@
 
       "veggieworld": {
         mode: "direct",
-        badge: "Messe-Feedback • VeggieWorld",
-        title: "Klare Kante für vegane Werte auf der VeggieWorld",
-        description: "Ein Vortrag auf der VeggieWorld stand im direkten Widerspruch zum Grundgedanken des Veganismus. Sende den Veranstaltern (Wellfairs GmbH) ein sachliches, aber deutliches Feedback.",
+        title: "Feedback an die VeggieWorld",
+        description: "Sende den Veranstaltern (Wellfairs GmbH) ein kurzes Feedback zum Bühnenprogramm.",
         recipient: "info@veggieworld.de",
         cc: "info@wellfairs.de",
-        topicLabel: "1. Welchen Kritikpunkt möchtest du besonders hervorheben?",
+        topicLabel: "Was soll in die E-Mail?",
         topics: [
           {
             id: "ethics",
-            label: "🐾 Fokus: Widerspruch zu Tierrechten & veganen Grundwerten",
+            label: "🐾 Widerspruch zu Tierrechten & veganen Werten",
             middleVariants: [
               "Konkret geht es um einen Vortrag im Bühnenprogramm, dessen Aussagen den ethischen Grundwerten des Veganismus und dem Tierrechtsgedanken direkt widersprochen haben.",
               "Ein Beitrag auf Ihrer Bühne hat Positionen vertreten, die mit einer tierleidfreien, konsequent veganen Lebensweise schlichtweg nicht vereinbar sind.",
@@ -267,9 +226,362 @@
           },
           {
             id: "curation",
-            label: "🔍 Fokus: Fehlende Prüfung der Speaker durch den Veranstalter",
+            label: "🔍 Fehlende Prüfung der Speaker vorab",
             middleVariants: [
               "Als Besucherin bzw. Besucher erwarte ich von der Messeorganisation, dass Speaker und deren Kernthesen vorab sorgfältig geprüft werden, damit das Bühnenprogramm zur Ausrichtung der Messe passt.",
               "Es wirkt leider sehr befremdlich, wenn im offiziellen Rahmenprogramm der VeggieWorld Vortragende sprechen, deren Inhalte offenbar vorab nicht auf ihre Vereinbarkeit mit veganen Werten geprüft wurden.",
               "Gerade weil die VeggieWorld für viele Neulinge ein wichtiges Aushängeschild ist, trägt das Organisationsteam eine hohe Verantwortung bei der Auswahl und Kuration der Bühnenbeiträge.",
-              "Dass ein solcher Vortrag ungefiltert Teil des offiziellen Programms
+              "Dass ein solcher Vortrag ungefiltert Teil des offiziellen Programms werden konnte, zeigt leider eine deutliche Lücke bei der inhaltlichen Auswahl der Rednerinnen und Redner."
+            ]
+          },
+          {
+            id: "credibility",
+            label: "🤝 Schaden für Aussteller & Glaubwürdigkeit",
+            middleVariants: [
+              "Zahlreiche vegane Aussteller, Vereine und Projekte stecken viel Herzblut in diese Messe. Ein solcher Bühnenbeitrag fällt genau diesen engagierten Menschen in den Rücken und schadet der Glaubwürdigkeit.",
+              "In den Gesprächen an den Ständen war deutlich zu spüren, wie sehr dieser Vortrag sowohl Gäste als auch Ausstellende irritiert und verärgert hat.",
+              "Wenn die VeggieWorld auch in Zukunft als authentischer Treffpunkt der veganen Community wahrgenommen werden möchte, dürfen solche Fehlgriffe im Programm nicht passieren.",
+              "Die Stärke der VeggieWorld war immer das Vertrauen der Community. Beiträge, die dem veganen Grundgedanken zuwiderlaufen, setzen genau dieses Vertrauen unnötig aufs Spiel."
+            ]
+          }
+        ],
+        subjects: [
+          "Kritisches Besucher-Feedback zum Bühnenprogramm auf der VeggieWorld",
+          "Rückmeldung zur VeggieWorld: Vortrag widerspricht veganen Grundwerten",
+          "Bitte um sorgfältigere Kuration der Speaker bei kommenden VeggieWorld-Messen",
+          "Deutliche Kritik an einem Vortragsbeitrag auf der vergangenen VeggieWorld"
+        ],
+        blocks: {
+          intro: [
+            "Liebes Team der VeggieWorld und der Wellfairs GmbH,\n\nich habe die Messe besucht, um spannende vegane Projekte und Produkte kennenzulernen, muss mich heute aber mit deutlicher Kritik an Sie wenden.",
+            "Guten Tag,\n\neigentlich schätze ich die VeggieWorld als Plattform für die pflanzliche Lebensweise sehr. Ein Programmpunkt auf der Bühne hat mich jedoch massiv enttäuscht.",
+            "Hallo liebes Organisationsteam der VeggieWorld,\n\nals Messeteilnehmerin bzw. Messeteilnehmer ist es mir ein wichtiges Anliegen, Ihnen eine ehrliche Rückmeldung zum vergangenen Bühnenprogramm zu geben.",
+            "Sehr geehrtes Team der Wellfairs GmbH,\n\nich schreibe Ihnen heute, weil ein Vortrag auf der VeggieWorld bei mir und vielen anderen Gästen vor Ort für großes Unverständnis gesorgt hat."
+          ],
+          impact: [
+            "Viele Besuchende vor Ort haben sich im Anschluss darüber ausgetauscht und waren sich einig, dass so etwas auf dieser Bühne keinen Platz haben sollte.",
+            "Eine vegane Messe sollte ein Ort der Inspiration und Aufklärung im Sinne der Tiere sein – und nicht für Verwirrung oder Verwässerung unserer Werte sorgen.",
+            "Konstruktive Vielfalt ist wichtig, doch die Grundfeste des Veganismus sollten auf einer VeggieWorld nicht zur Disposition gestellt werden.",
+            "Mir liegt viel daran, dass die Messe ein positiver Ort für die Bewegung bleibt – genau deshalb darf ein solcher Programmpunkt nicht unkommentiert bleiben."
+          ],
+          outro: [
+            "Ich bitte Sie dringend, bei kommenden Veranstaltungen klare inhaltliche Kriterien für das Bühnenprogramm anzulegen. Über eine kurze Stellungnahme würde ich mich freuen.\n\nMit freundlichen Grüßen\n{{user_name}}",
+            "Bitte stellen Sie künftig sicher, dass die Auswahl der Vortragenden die Werte der veganen Community respektiert. Vielen Dank für die Kenntnisnahme.\n\nViele Grüße\n{{user_name}}",
+            "Ich hoffe sehr, dass Sie dieses Feedback ernst nehmen und bei der Planung der nächsten VeggieWorld entsprechend gegensteuern.\n\nBeste Grüße\n{{user_name}}",
+            "Lassen Sie mich gerne wissen, wie Sie künftig verhindern möchten, dass sich ein solcher Vorfall im Bühnenprogramm wiederholt.\n\nFreundliche Grüße\n{{user_name}}"
+          ]
+        }
+      }
+    };
+
+    let currentCampKey = "not-egg";
+    let currentCamp = null;
+    let currentTopicIndex = 0;
+    let activeMarkets = [];
+    let selectedIndices = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0 };
+
+    function initApp() {
+      var params = new URLSearchParams(window.location.search);
+      var urlCamp = params.get("c");
+      
+      var switcherBar = document.getElementById("campaign-switcher");
+      var switcherContainer = document.getElementById("switcher-buttons");
+      switcherContainer.innerHTML = "";
+      
+      if (urlCamp && CAMPAIGNS[urlCamp]) {
+        switcherBar.classList.add("hidden");
+      } else {
+        Object.keys(CAMPAIGNS).forEach(function(key) {
+          var btn = document.createElement("button");
+          btn.id = "switch-btn-" + key;
+          btn.className = "px-2.5 py-1 rounded-md font-semibold transition";
+          btn.innerText = key === "not-egg" ? "🍳 Not Egg" : (key === "veggieworld" ? "🎤 VeggieWorld" : key);
+          btn.onclick = function() { selectCampaign(key); };
+          switcherContainer.appendChild(btn);
+        });
+      }
+
+      if (urlCamp && CAMPAIGNS[urlCamp]) {
+        selectCampaign(urlCamp);
+      } else {
+        selectCampaign("not-egg");
+      }
+    }
+
+    function selectCampaign(key) {
+      currentCampKey = key;
+      currentCamp = CAMPAIGNS[key];
+      currentTopicIndex = 0;
+
+      Object.keys(CAMPAIGNS).forEach(function(k) {
+        var b = document.getElementById("switch-btn-" + k);
+        if (b) {
+          b.className = k === key 
+            ? "px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-slate-950 transition" 
+            : "px-2.5 py-1 rounded-md font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
+        }
+      });
+
+      document.getElementById("camp-title").innerText = currentCamp.title;
+      document.getElementById("camp-desc").innerText = currentCamp.description;
+      document.getElementById("topic-label").innerText = currentCamp.topicLabel || "Was soll in die E-Mail?";
+
+      var localSection = document.getElementById("local-search-section");
+      if (currentCamp.mode === "local") {
+        localSection.classList.remove("hidden");
+        activeMarkets = CUSTOM_MARKETS.slice();
+        populateMarketDropdown(activeMarkets);
+      } else {
+        localSection.classList.add("hidden");
+      }
+
+      renderTopicButtons();
+      rollNewCombination();
+    }
+
+    function renderTopicButtons() {
+      var container = document.getElementById("topic-buttons");
+      container.innerHTML = "";
+      currentCamp.topics.forEach(function(t, idx) {
+        var btn = document.createElement("button");
+        var isSelected = idx === currentTopicIndex;
+        btn.className = isSelected
+          ? "text-left px-3.5 py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 text-emerald-950 font-bold text-sm transition flex items-center justify-between"
+          : "text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition flex items-center justify-between";
+        btn.innerHTML = "<span>" + t.label + "</span><span class='text-xs ml-2'>" + (isSelected ? "✅" : "⚪") + "</span>";
+        btn.onclick = function() {
+          currentTopicIndex = idx;
+          renderTopicButtons();
+          var middleArr = currentCamp.topics[currentTopicIndex].middleVariants;
+          selectedIndices.middle = Math.floor(Math.random() * middleArr.length);
+          renderEmail();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function randomIndex(arr) {
+      return Math.floor(Math.random() * arr.length);
+    }
+
+    function rollNewCombination() {
+      var middleArr = currentCamp.topics[currentTopicIndex].middleVariants;
+      selectedIndices = {
+        subject: randomIndex(currentCamp.subjects),
+        intro: randomIndex(currentCamp.blocks.intro),
+        middle: randomIndex(middleArr),
+        impact: randomIndex(currentCamp.blocks.impact),
+        outro: randomIndex(currentCamp.blocks.outro)
+      };
+      renderEmail();
+    }
+
+    function populateMarketDropdown(list) {
+      var select = document.getElementById("market-select");
+      select.innerHTML = "";
+      list.forEach(function(m, idx) {
+        var opt = document.createElement("option");
+        opt.value = idx;
+        opt.text = m.name + " – " + m.street;
+        select.appendChild(opt);
+      });
+      onMarketChange();
+    }
+
+    function onMarketChange() {
+      renderEmail();
+    }
+
+    async function searchGermanyMarkets() {
+      var query = document.getElementById("zip-input").value.trim();
+      var statusEl = document.getElementById("search-status");
+      var btn = document.getElementById("search-btn");
+
+      if (!query) {
+        activeMarkets = CUSTOM_MARKETS.slice();
+        populateMarketDropdown(activeMarkets);
+        return;
+      }
+
+      var localMatches = CUSTOM_MARKETS.filter(function(m) {
+        return m.zip.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
+               m.street.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
+               m.name.toLowerCase().indexOf(query.toLowerCase()) !== -1;
+      });
+
+      statusEl.classList.remove("hidden");
+      statusEl.innerText = "Suche Märkte in " + query + "...";
+      btn.disabled = true;
+      btn.innerText = "...";
+
+      try {
+        var isZip = /^\d{5}$/.test(query);
+        var areaFilter = isZip
+          ? 'area["postal_code"="' + query + '"]["ISO3166-1"="DE"]->.searchArea;'
+          : 'area["name"="' + query + '"]["admin_level"~"^(4|6|8)$"]->.searchArea;';
+
+        var overpassQuery = '[out:json][timeout:12];' + areaFilter + '(nwr["shop"="supermarket"]["brand"~"^(REWE|EDEKA|Edeka|Rewe)"](area.searchArea);nwr["shop"="supermarket"]["name"~"^(REWE|EDEKA|Edeka|Rewe)"](area.searchArea););out center tags;';
+
+        var response = await fetch("https://overpass.private.coffee/api/interpreter", {
+          method: "POST",
+          body: "data=" + encodeURIComponent(overpassQuery)
+        });
+        var data = await response.json();
+
+        var fetchedMarkets = [];
+        var seenKeys = {};
+        localMatches.forEach(function(m) { seenKeys[(m.name + m.street).toLowerCase()] = true; });
+
+        if (data && data.elements) {
+          data.elements.forEach(function(el) {
+            var tags = el.tags || {};
+            var rawName = tags.name || tags.brand || "Supermarkt";
+            var brand = rawName.toUpperCase().indexOf("EDEKA") !== -1 || (tags.brand && tags.brand.toUpperCase().indexOf("EDEKA") !== -1) ? "EDEKA" : "REWE";
+            var street = tags["addr:street"] || "";
+            var housenumber = tags["addr:housenumber"] || "";
+            var postcode = tags["addr:postcode"] || (isZip ? query : "");
+            var city = tags["addr:city"] || (!isZip ? query : "");
+            var contactEmail = tags["contact:email"] || tags["email"] || "";
+
+            var part1 = (street + " " + housenumber).trim();
+            var part2 = (postcode + " " + city).trim();
+            var fullAddress = (part1 && part2) ? (part1 + ", " + part2) : (part1 || part2 || ("Standort " + query));
+
+            var uniqueKey = (rawName + fullAddress).toLowerCase();
+            if (!seenKeys[uniqueKey]) {
+              seenKeys[uniqueKey] = true;
+              fetchedMarkets.push({
+                zip: postcode || query,
+                brand: brand,
+                name: rawName,
+                street: fullAddress,
+                email: contactEmail
+              });
+            }
+          });
+        }
+
+        var combined = localMatches.concat(fetchedMarkets);
+
+        if (combined.length > 0) {
+          activeMarkets = combined;
+          statusEl.innerText = "✅ " + combined.length + " Märkte gefunden";
+        } else {
+          activeMarkets = [
+            { zip: query, brand: "REWE", name: "REWE Markt (" + query + ")", street: "Standort " + query, email: "" },
+            { zip: query, brand: "EDEKA", name: "EDEKA Markt (" + query + ")", street: "Standort " + query, email: "" }
+          ];
+          statusEl.innerText = "✅ REWE & EDEKA für " + query + " ausgewählt";
+        }
+        populateMarketDropdown(activeMarkets);
+      } catch (err) {
+        activeMarkets = localMatches.length ? localMatches : [
+          { zip: query, brand: "REWE", name: "REWE Markt (" + query + ")", street: "Standort " + query, email: "" },
+          { zip: query, brand: "EDEKA", name: "EDEKA Markt (" + query + ")", street: "Standort " + query, email: "" }
+        ];
+        statusEl.innerText = "✅ Standort " + query + " übernommen";
+        populateMarketDropdown(activeMarkets);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Suchen";
+      }
+    }
+
+    function replaceAllStr(str, find, replace) {
+      return str.split(find).join(replace);
+    }
+
+    function renderEmail() {
+      var userName = document.getElementById("user-name").value.trim() || "[Dein Name]";
+      var toEmail = currentCamp.recipient || "";
+      var ccEmail = currentCamp.cc || "";
+      var marketName = "";
+      var marketStreet = "";
+
+      if (currentCamp.mode === "local") {
+        var select = document.getElementById("market-select");
+        var market = activeMarkets[select.value] || activeMarkets[0];
+        marketName = market.name;
+        marketStreet = market.street;
+
+        var corporateEmail = market.brand === "EDEKA" 
+          ? getEdekaRegionalEmail(market.zip) 
+          : "kundenmanagement@rewe.de";
+
+        if (market.email) {
+          toEmail = market.email;
+          ccEmail = corporateEmail;
+        } else {
+          toEmail = corporateEmail;
+          ccEmail = market.brand === "EDEKA" && corporateEmail !== "info@edeka.de" ? "info@edeka.de" : "";
+        }
+      }
+
+      function replacePlaceholders(text) {
+        var res = replaceAllStr(text, "{{user_name}}", userName);
+        res = replaceAllStr(res, "{{market_name}}", marketName);
+        res = replaceAllStr(res, "{{market_street}}", marketStreet);
+        return res;
+      }
+
+      var middleVariants = currentCamp.topics[currentTopicIndex].middleVariants;
+      var rawSubject = currentCamp.subjects[selectedIndices.subject] || currentCamp.subjects[0];
+      var rawBody = [
+        currentCamp.blocks.intro[selectedIndices.intro] || currentCamp.blocks.intro[0],
+        middleVariants[selectedIndices.middle] || middleVariants[0],
+        currentCamp.blocks.impact[selectedIndices.impact] || currentCamp.blocks.impact[0],
+        currentCamp.blocks.outro[selectedIndices.outro] || currentCamp.blocks.outro[0]
+      ].join("\n\n");
+
+      document.getElementById("preview-to").innerText = toEmail;
+      var ccWrap = document.getElementById("preview-cc-wrap");
+      if (ccEmail) {
+        ccWrap.classList.remove("hidden");
+        document.getElementById("preview-cc").innerText = ccEmail;
+      } else {
+        ccWrap.classList.add("hidden");
+        document.getElementById("preview-cc").innerText = "";
+      }
+
+      document.getElementById("preview-subject").value = replacePlaceholders(rawSubject);
+      document.getElementById("preview-body").value = replacePlaceholders(rawBody);
+
+      updateMailtoLink();
+    }
+
+    function updateMailtoLink() {
+      var to = document.getElementById("preview-to").innerText.trim();
+      var cc = document.getElementById("preview-cc").innerText.trim();
+      var subject = document.getElementById("preview-subject").value;
+      var body = document.getElementById("preview-body").value.replace(/\r?\n/g, "\r\n");
+
+      var mailtoHref = "mailto:" + to + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      if (cc) {
+        mailtoHref += "&cc=" + encodeURIComponent(cc);
+      }
+      document.getElementById("mailto-btn").setAttribute("href", mailtoHref);
+
+      var gmailHref = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to) + "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      if (cc) {
+        gmailHref += "&cc=" + encodeURIComponent(cc);
+      }
+      document.getElementById("gmail-btn").setAttribute("href", gmailHref);
+    }
+
+    function copyPart(part, btnEl) {
+      var textToCopy = "";
+      if (part === "to") textToCopy = document.getElementById("preview-to").innerText;
+      if (part === "subject") textToCopy = document.getElementById("preview-subject").value;
+      if (part === "body") textToCopy = document.getElementById("preview-body").value;
+
+      navigator.clipboard.writeText(textToCopy).then(function() {
+        var originalText = btnEl.innerText;
+        btnEl.innerText = "✅ Kopiert";
+        setTimeout(function() { btnEl.innerText = originalText; }, 1500);
+      });
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
