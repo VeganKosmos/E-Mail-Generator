@@ -7,6 +7,7 @@
 <meta name="description" content="Schreib deinem Supermarkt in einer Minute eine E-Mail und wünsch dir vegane Produkte ins Sortiment.">
 <meta name="theme-color" content="#0f172a">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   body { -webkit-tap-highlight-color: transparent; }
   /* 16px verhindert, dass iOS beim Antippen eines Feldes in die Seite zoomt.
@@ -62,9 +63,8 @@
           class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-2"></select>
 
         <div id="already-listed-banner" class="hidden mb-2 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs leading-relaxed">
-          <strong>Dieser Markt führt Not Egg schon</strong>, zumindest laut
-          <a href="https://not-egg.de/bezugsquellen/" target="_blank" rel="noopener" class="underline font-bold">not-egg.de/bezugsquellen</a>.
-          Die E-Mail unten fragt deshalb nur nach, ob es gerade vorrätig ist.
+          <span id="stockist-note"></span>
+          <a id="stockist-link" href="#" target="_blank" rel="noopener" class="underline font-bold hidden">Zur Liste</a>
         </div>
 
         <div id="market-detail-card" class="bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 space-y-1">
@@ -85,8 +85,6 @@
         <p class="text-xs text-slate-600 font-medium">Trag den Markt ein, in dem du wirklich einkaufst:</p>
         <div class="grid grid-cols-3 gap-2">
           <select id="manual-brand" autocomplete="off" aria-label="Kette" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white font-bold">
-            <option value="REWE">REWE</option>
-            <option value="EDEKA">EDEKA</option>
           </select>
           <input type="text" id="manual-name" autocomplete="off" aria-label="Name des Marktes" placeholder="Name (z.B. EDEKA Müller)"
             class="col-span-2 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
@@ -147,6 +145,21 @@
           class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-2.5 px-2 rounded-lg border border-red-200 text-center">🌐 Gmail</a>
       </div>
     </div>
+
+    <!-- TEILEN: Link und QR-Code zur aktuellen Aktion -->
+    <details id="share-box" class="mt-6 pt-4 border-t border-slate-200">
+      <summary class="text-sm font-bold text-slate-800 cursor-pointer">📲 Aktion teilen (Link und QR-Code)</summary>
+      <div class="mt-3 text-center">
+        <canvas id="share-qr" class="mx-auto w-56 h-56 rounded-lg border border-slate-200 bg-white"></canvas>
+        <div id="share-url" class="mt-2 font-mono text-xs text-slate-600 break-all select-all"></div>
+        <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-xs">
+          <button type="button" id="share-copy" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-2 rounded-lg border border-slate-200">📋 Link</button>
+          <a id="share-save" href="#" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-2 rounded-lg border border-slate-200">⬇️ QR-Bild</a>
+          <button type="button" id="share-native" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-2 rounded-lg border border-slate-200">↗️ Teilen</button>
+        </div>
+        <p class="mt-2 text-[11px] text-slate-400">Wer den Code scannt, landet direkt bei dieser Aktion, ohne Umschalter.</p>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -159,7 +172,7 @@
 
 /* Supermärkte von https://not-egg.de/bezugsquellen/ (nur REWE und EDEKA).
    Stand: 10.11.2026. Format: [PLZ, Kette, Name, Adresse]            */
-var NOT_EGG_STOCKISTS = [
+var NOT_EGG_STOCKISTS = toStockists([
   ["97631", "EDEKA", "EDEKA Höchner", "Hoher Markstein 6, 97631 Bad Königshofen"],
   ["12587", "EDEKA", "EDEKA Voigt", "Bölschestr. 36, 12587 Berlin"],
   ["10245", "REWE", "REWE Henkelmann", "Revaler Str. 33, 10245 Berlin"],
@@ -201,15 +214,25 @@ var NOT_EGG_STOCKISTS = [
   ["59379", "REWE", "REWE Gawdi", "Kreisstr. 92, 59379 Selm"],
   ["25436", "REWE", "REWE Kim Ide", "Esinger Str. 3, 25436 Tornesch"],
   ["26384", "REWE", "REWE Familie Schulze", "Mühlenweg 146, 26384 Wilhelmshaven"]
-].map(function (r, i) {
-  return { sid: i, zip: r[0], brand: r[1], name: r[2], street: r[3], key: streetKey(r[3]), email: "", hasNotEgg: true };
-});
+]);
 
 /* Eigene Märkte, die du selbst geprüft hast (z.B. mit direkter E-Mail-Adresse).
    Sie erscheinen, wenn PLZ oder Ort zur Suche passen. Nur echte, geprüfte
    Einträge! Beispiel:
    { zip: "12345", brand: "EDEKA", name: "EDEKA Beispiel", street: "Hauptstr. 1, 12345 Musterstadt", email: "markt@beispiel.de" }  */
 var CUSTOM_MARKETS = [];
+
+/* KETTEN: Für jede Kette, die eine Aktion durchsuchen darf, steht hier,
+   wohin die Mail geht, wenn der Markt keine eigene Adresse hat.
+   Neue Kette nur mit geprüfter Adresse ergänzen, z.B.
+   KAUFLAND: { mail: function (zip) { return { to: "...", cc: "" }; } }   */
+var CHAINS = {
+  REWE:  { mail: function (zip) { return { to: REWE_MAIL, cc: "" }; } },
+  EDEKA: { mail: function (zip) {
+    var regional = getEdekaEmail(zip);
+    return { to: regional, cc: regional !== EDEKA_CENTRAL ? EDEKA_CENTRAL : "" };
+  } }
+};
 
 var REWE_MAIL = "kundenmanagement@rewe.de";   /* steht so im Impressum von rewe.de */
 var EDEKA_CENTRAL = "info@edeka.de";
@@ -237,6 +260,13 @@ var CAMPAIGNS = {
     title: "Wünsch dir Not Egg! 🍳",
     description: "Not Egg ist ein veganes Spiegelei aus der Tiefkühltruhe. Such deinen REWE oder EDEKA und schreib ihm in einer Minute, dass du es dort kaufen möchtest.",
     topicLabel: "Was passt zu dir?",
+    chains: ["REWE", "EDEKA"],
+    /* Märkte, die das Produkt schon führen. Für sie erscheint nur das
+       Thema mit onlyStocked: true. Ohne solche Liste: stockists weglassen. */
+    stockists: NOT_EGG_STOCKISTS,
+    stockistLabel: "hat Not Egg",
+    stockistNote: "Dieser Markt führt Not Egg schon, zumindest laut not-egg.de/bezugsquellen. Die E-Mail unten fragt deshalb nur nach, ob es gerade vorrätig ist.",
+    stockistUrl: "https://not-egg.de/bezugsquellen/",
     subjects: [
       "Sortimentswunsch Not Egg für {{market}}",
       "Kundenwunsch für {{market}}: Not Egg",
@@ -245,18 +275,18 @@ var CAMPAIGNS = {
     ],
     blocks: {
       intro: [
-        "Guten Tag,\n\nich kaufe regelmäßig bei {{market}} ein und habe ein Anliegen zum Tiefkühlsortiment.",
-        "Hallo liebes {{brand}}-Team,\n\nich gehe fast jede Woche bei {{market}} einkaufen. Heute schreibe ich wegen einer Sache aus der Tiefkühlabteilung.",
+        "Guten Tag,\n\nich kaufe [[regelmäßig|oft|fast immer]] bei {{market}} ein und habe [[ein Anliegen|einen Wunsch|eine Bitte]] zum Tiefkühlsortiment.",
+        "Hallo liebes {{brand}}-Team,\n\nich gehe [[fast jede Woche|regelmäßig|meistens]] bei {{market}} einkaufen. Heute schreibe ich wegen einer Sache aus der Tiefkühlabteilung.",
         "Hallo,\n\nes geht um den Markt {{market}}. Dort mache ich die meisten meiner Einkäufe.",
         "Guten Tag,\n\neine kurze Frage zu {{market}}, wo ich regelmäßig einkaufe.",
         "Hallo zusammen,\n\n{{market}} ist der Markt, in dem ich normalerweise einkaufe. Deshalb wende ich mich mit meiner Frage an Sie."
       ],
       impact: [
         "Vegane Alternativen zum Ei gibt es im Tiefkühlregal bisher kaum. Das wäre also wirklich etwas Neues.",
-        "Bestellen lässt es sich direkt beim Vertrieb, der Vonher GmbH in Hamburg (info@vonher.de).",
+        "Der Vertrieb läuft über die Vonher GmbH in Hamburg. Dort kann der Markt direkt anfragen (info@vonher.de).",
         "Soweit ich weiß, führen es schon einige REWE- und EDEKA-Märkte. Eine Liste steht auf not-egg.de/bezugsquellen.",
-        "Da es Tiefkühlware ist, hält es sich lange. Viel Risiko wäre ein Versuch also nicht.",
-        "Den Kontakt zum Vertrieb finden Sie auf not-egg.de. Ich würde es auf jeden Fall kaufen."
+        "Da es Tiefkühlware ist, hält es sich lange. Ein Versuch wäre also kein großes Risiko.",
+        "Auf der Website steht auch der Kontakt zum Vertrieb. Ich würde es auf jeden Fall kaufen."
       ],
       outro: [
         "Über eine kurze Antwort würde ich mich freuen.\n\nViele Grüße\n{{user_name}}",
@@ -271,7 +301,7 @@ var CAMPAIGNS = {
         id: "neutral",
         label: "📄 Ich möchte es einfach dort kaufen können",
         middleVariants: [
-          "Ich würde dort gern Not Egg kaufen, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de). Bisher habe ich es im Markt nicht gefunden. Könnten Sie es ins Sortiment aufnehmen?",
+          "Ich würde dort gern Not Egg kaufen, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de). Bisher habe ich es im Markt nicht gefunden. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?]]",
           "Gibt es eine Möglichkeit, dort Not Egg ins Tiefkühlsortiment aufzunehmen? Das ist ein pflanzliches Spiegelei, das man gefroren kauft und nur noch kurz in der Pfanne brät (not-egg.de).",
           "Mir fehlt im Tiefkühlregal ein Produkt, nämlich Not Egg, ein veganes Spiegelei (not-egg.de). Ich würde mich freuen, wenn Sie es bestellen könnten.",
           "Ich habe im Markt nach Not Egg gesucht, einem pflanzlichen Spiegelei, das tiefgekühlt verkauft wird (not-egg.de), es aber nicht gefunden. Lässt sich das für den Markt bestellen?"
@@ -281,7 +311,7 @@ var CAMPAIGNS = {
         id: "social",
         label: "📱 Ich habe es online gesehen",
         middleVariants: [
-          "Ich habe online Not Egg gesehen, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de), und würde es gern probieren. Im Markt habe ich es leider nicht gefunden. Können Sie es bestellen?",
+          "Ich habe online Not Egg gesehen, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de), und würde es gern probieren. Im Markt habe ich es leider nicht gefunden. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?]]",
           "Im Netz bin ich auf Not Egg gestoßen, ein pflanzliches Spiegelei, das es tiefgekühlt gibt (not-egg.de). Einen Onlineshop hat der Hersteller nicht, man bekommt es nur im Laden. Deshalb meine Frage, ob Sie es ins Sortiment nehmen könnten.",
           "In letzter Zeit sehe ich online öfter Not Egg, ein veganes Tiefkühl-Spiegelei (not-egg.de). Ich würde es gern selbst ausprobieren, am liebsten gleich beim normalen Einkauf. Wäre es möglich, das Produkt aufzunehmen?",
           "Ich habe von Not Egg gelesen, einem veganen Spiegelei aus der Tiefkühlung (not-egg.de), und bin neugierig geworden. Leider führt der Markt es bisher nicht. Könnten Sie das ändern?"
@@ -292,8 +322,8 @@ var CAMPAIGNS = {
         label: "🚗 Ich fahre dafür bisher extra in einen anderen Markt",
         middleVariants: [
           "Ich kaufe regelmäßig Not Egg, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Dafür muss ich im Moment extra zu einem anderen Markt fahren, der ein gutes Stück weiter weg ist. Könnten Sie es auch in diesem Markt ins Sortiment nehmen?",
-          "Für Not Egg, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de), fahre ich zurzeit jedes Mal in einen anderen Laden. Mit Tiefkühlware ist der lange Heimweg nicht ideal. Am liebsten würde ich es einfach beim normalen Einkauf mitnehmen. Lässt sich das einrichten?",
-          "Es gibt ein Produkt, für das ich bisher einen Umweg fahre, und zwar Not Egg, ein veganes Spiegelei, das tiefgekühlt verkauft wird (not-egg.de). Wenn es das im Markt gäbe, könnte ich mir die Extrafahrt sparen. Können Sie es bestellen?",
+          "Für Not Egg, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de), fahre ich zurzeit jedes Mal in einen anderen Laden. Mit Tiefkühlware ist der lange Heimweg nicht ideal. Am liebsten würde ich es einfach beim normalen Einkauf mitnehmen. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?]]",
+          "Es gibt ein Produkt, für das ich bisher einen Umweg fahre, und zwar Not Egg, ein veganes Spiegelei, das tiefgekühlt verkauft wird (not-egg.de). Wenn es das im Markt gäbe, könnte ich mir die Extrafahrt sparen. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?]]",
           "Not Egg, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de), bekomme ich bisher nur in einem Markt, der für mich ziemlich weit weg ist. Ich würde es viel lieber dort kaufen, wo ich sowieso einkaufe. Wäre eine Aufnahme ins Sortiment möglich?"
         ]
       },
@@ -301,8 +331,8 @@ var CAMPAIGNS = {
         id: "taste",
         label: "🍳 Ich habe es auf der VeggieWorld probiert",
         middleVariants: [
-          "Auf der VeggieWorld habe ich Not Egg probiert, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Es hat mir richtig gut geschmeckt und ich würde es gern öfter essen. Im Markt habe ich es aber nicht gefunden. Könnten Sie es aufnehmen?",
-          "Ich war auf der VeggieWorld und habe dort Not Egg gegessen, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de). Seitdem suche ich es im Supermarkt. Können Sie es bestellen?",
+          "Auf der VeggieWorld habe ich Not Egg probiert, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Es hat mir [[richtig gut|sehr gut|wirklich gut]] geschmeckt und ich würde es gern [[öfter essen|regelmäßig kaufen|öfter zu Hause haben]]. Im Markt habe ich es aber nicht gefunden. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?]]",
+          "Ich war auf der VeggieWorld und habe dort Not Egg gegessen, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de). Seitdem suche ich es im Supermarkt. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?]]",
           "Ich habe Not Egg auf der Messe VeggieWorld kennengelernt. Das ist ein veganes Spiegelei, das man gefroren kauft und in ein paar Minuten in der Pfanne fertig brät (not-egg.de). Geschmacklich hat es mich überzeugt. Gibt es eine Chance, dass der Markt es ins Sortiment nimmt?",
           "Seit ich Not Egg auf der VeggieWorld probiert habe, hätte ich es gern öfter zu Hause. Es ist ein veganes Spiegelei aus der Tiefkühlung (not-egg.de). Leider führt der Markt es noch nicht. Wäre es möglich, das zu ändern?"
         ]
@@ -351,7 +381,8 @@ var CAMPAIGNS = {
        UNGEPRÜFT: info@veggieworld.de (aus der Vorversion). Zum Entfernen cc auf "" setzen. */
     recipient: "info@wellfairs.de",
     cc: "info@veggieworld.de",
-    topicLabel: "Was stört dich am meisten?",
+    topicLabel: "Was hat dich gestört? (mehrere möglich)",
+    multi: true,   /* mehrere Themen ankreuzbar, jedes wird ein eigener Absatz */
     subjects: [
       "Rückmeldung zu einem Vortrag auf der VeggieWorld",
       "Kritik am Bühnenprogramm der VeggieWorld",
@@ -449,11 +480,19 @@ function containsKey(hay, key) {
   return false;
 }
 
+/* Macht aus [PLZ, Kette, Name, Adresse]-Zeilen eine Bezugsquellen-Liste. */
+function toStockists(rows) {
+  return rows.map(function (r) {
+    return { zip: r[0], brand: r[1], name: r[2], street: r[3], key: streetKey(r[3]), email: "", hasNotEgg: true };
+  });
+}
+
 function findStockist(brand, zip, streetWithNumber) {
+  var list = (camp && camp.stockists) || [];
   var hay = norm(streetWithNumber);
   if (!hay) return null;
-  for (var i = 0; i < NOT_EGG_STOCKISTS.length; i++) {
-    var s = NOT_EGG_STOCKISTS[i];
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
     if (s.brand !== brand) continue;
     if (zip && s.zip !== zip) continue;
     if (containsKey(hay, s.key)) return s;
@@ -476,9 +515,10 @@ function getEdekaEmail(zip) {
 
 function recipientsFor(market) {
   if (!market) return { to: "", cc: "" };
-  var corp = market.brand === "EDEKA" ? getEdekaEmail(market.zip) : REWE_MAIL;
-  if (market.email) return { to: market.email, cc: corp };
-  return { to: corp, cc: (market.brand === "EDEKA" && corp !== EDEKA_CENTRAL) ? EDEKA_CENTRAL : "" };
+  var chain = CHAINS[market.brand];
+  var corp = chain ? chain.mail(market.zip) : { to: "", cc: "" };
+  if (market.email) return { to: market.email, cc: corp.to };
+  return corp;
 }
 
 function cleanEmail(raw) {
@@ -510,6 +550,23 @@ function fill(text, vars) {
 
 function pick(arr, n) { return arr[n % arr.length]; }
 
+/* Wechselwörter im Text: "[[regelmäßig|oft|meistens]]" wird zu einer der
+   Varianten. Gleicher seed = gleiche Auswahl, damit sich der Text beim
+   Tippen des Namens nicht ändert.                                        */
+function spin(text, seed) {
+  var a = seed >>> 0;
+  function rnd() {
+    a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  return text.replace(/\[\[([^\[\]]*)\]\]/g, function (all, inner) {
+    var options = inner.split("|");
+    return options[Math.floor(rnd() * options.length)];
+  });
+}
+
 function store(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
 function recall(key) { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } }
 
@@ -534,11 +591,12 @@ var PH_MARKET = "[dein Markt]";
 var PH_STREET = "[Adresse eintragen]";
 
 var camp = null;
-var topicId = "";
+var campKey = "";
+var picked = {};          /* angekreuzte Themen: { id: true } */
 var markets = [];
 var manualMode = false;
 var searchRun = 0;
-var roll = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0 };
+var roll = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0, seed: 1 };
 
 /* =====================================================================
    KAMPAGNE UND THEMEN
@@ -593,10 +651,16 @@ function initApp() {
     if (e.persisted) return;          /* Rückkehr aus der Mail-App: nichts anfassen */
     $("manual-name").value = "";
     $("manual-street").value = "";
-    $("manual-brand").value = "REWE";
+    if (camp.chains) $("manual-brand").value = camp.chains[0];
     $("user-name").value = recall("vmom-name");
     onMarketChange();
   });
+
+  $("share-copy").addEventListener("click", function () { copyText($("share-url").textContent, $("share-copy")); });
+  $("share-native").addEventListener("click", function () {
+    if (navigator.share) navigator.share({ title: camp.title, url: $("share-url").textContent }).catch(function () {});
+  });
+  if (!navigator.share) $("share-native").classList.add("hidden");
 
   $("user-name").value = recall("vmom-name");
   selectCampaign(hasUrlCamp ? urlCamp : Object.keys(CAMPAIGNS)[0]);
@@ -604,7 +668,8 @@ function initApp() {
 
 function selectCampaign(key) {
   camp = CAMPAIGNS[key];
-  topicId = "";
+  campKey = key;
+  picked = {};
   markets = [];
   searchRun++;
 
@@ -627,8 +692,23 @@ function selectCampaign(key) {
   hideProgress();
   $("search-btn").disabled = false;
   $("search-btn").textContent = "Suchen";
-  if (isLocal) populateMarketDropdown();
+  if (isLocal) {
+    var brandSelect = $("manual-brand");
+    brandSelect.innerHTML = "";
+    camp.chains.forEach(function (c) {
+      var opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      brandSelect.appendChild(opt);
+    });
+    brandSelect.value = camp.chains[0];
+    $("stockist-note").textContent = camp.stockistNote || "Dieser Markt führt das Produkt schon.";
+    $("stockist-link").classList.toggle("hidden", !camp.stockistUrl);
+    if (camp.stockistUrl) $("stockist-link").setAttribute("href", camp.stockistUrl);
+    populateMarketDropdown();
+  }
   setManualMode(false, true);
+  renderShare();
 
   roll = randomRoll();
   onMarketChange();
@@ -662,19 +742,25 @@ function visibleTopics() {
   return list.length ? list : camp.topics;
 }
 
-function currentTopic() {
+/* Liefert die angekreuzten Themen (mindestens eines). Ohne multi: true
+   ist es immer genau eines.                                            */
+function selectedTopics() {
   var list = visibleTopics();
-  for (var i = 0; i < list.length; i++) if (list[i].id === topicId) return list[i];
-  topicId = list[0].id;
-  return list[0];
+  var sel = list.filter(function (t) { return picked[t.id]; });
+  if (!sel.length) {
+    picked = {};
+    picked[list[0].id] = true;
+    sel = [list[0]];
+  }
+  return camp.multi ? sel : [sel[0]];
 }
 
 function renderTopicButtons() {
-  var active = currentTopic();
+  var active = selectedTopics();
   var box = $("topic-buttons");
   box.innerHTML = "";
   visibleTopics().forEach(function (t) {
-    var selected = t.id === active.id;
+    var selected = active.indexOf(t) !== -1;
     var btn = document.createElement("button");
     btn.type = "button";
     btn.setAttribute("aria-pressed", selected ? "true" : "false");
@@ -685,12 +771,18 @@ function renderTopicButtons() {
     label.textContent = t.label;
     var mark = document.createElement("span");
     mark.className = "text-xs shrink-0";
-    mark.textContent = selected ? "✅" : "⚪";
+    mark.textContent = camp.multi ? (selected ? "☑️" : "⬜") : (selected ? "✅" : "⚪");
     btn.appendChild(label);
     btn.appendChild(mark);
     btn.addEventListener("click", function () {
-      topicId = t.id;
-      roll.middle = Math.floor(Math.random() * 1000);
+      if (camp.multi) {
+        if (selected && active.length === 1) return;      /* eines muss bleiben */
+        picked[t.id] = !selected;
+      } else {
+        picked = {};
+        picked[t.id] = true;
+        roll.middle = Math.floor(Math.random() * 1000);
+      }
       renderTopicButtons();
       renderEmail();
     });
@@ -700,7 +792,7 @@ function renderTopicButtons() {
 
 function randomRoll() {
   var r = function () { return Math.floor(Math.random() * 1000); };
-  return { subject: r(), intro: r(), middle: r(), impact: r(), outro: r() };
+  return { subject: r(), intro: r(), middle: r(), impact: r(), outro: r(), seed: r() + 1 };
 }
 
 function rollNewCombination() {
@@ -733,7 +825,7 @@ function populateMarketDropdown() {
     var opt = document.createElement("option");
     opt.value = String(idx);
     var dist = typeof m.km === "number" ? " (ca. " + m.km.toFixed(1).replace(".", ",") + " km)" : "";
-    opt.textContent = (m.hasNotEgg ? "✓ hat Not Egg: " : "") + m.name + ", " + m.street + dist;
+    opt.textContent = (m.hasNotEgg ? "✓ " + (camp.stockistLabel || "führt es schon") + ": " : "") + m.name + ", " + m.street + dist;
     select.appendChild(opt);
   });
   $("dropdown-wrapper").classList.toggle("hidden", manualMode || markets.length === 0);
@@ -819,9 +911,10 @@ async function geocode(query) {
 
 async function queryOverpass(lat, lon, radius) {
   var around = "(around:" + radius + "," + lat + "," + lon + ");";
+  var rx = "^(" + camp.chains.join("|") + ")";
   var q = "[out:json][timeout:10];(" +
-          'nwr["shop"="supermarket"]["brand"~"^(rewe|edeka)",i]' + around +
-          'nwr["shop"="supermarket"]["name"~"^(rewe|edeka)",i]' + around +
+          'nwr["shop"="supermarket"]["brand"~"' + rx + '",i]' + around +
+          'nwr["shop"="supermarket"]["name"~"' + rx + '",i]' + around +
           ");out center tags;";
   var endpoints = [
     "https://overpass-api.de/api/interpreter",
@@ -839,14 +932,14 @@ async function queryOverpass(lat, lon, radius) {
    zuverlässig. Rückgabe im selben Format wie Overpass ({elements: [...]}),
    oder null, wenn Photon nicht erreichbar ist.                          */
 async function queryPhoton(lat, lon) {
-  var answers = await Promise.all(["REWE", "EDEKA"].map(function (brand) {
+  var answers = await Promise.all(camp.chains.map(function (brand) {
     var url = "https://photon.komoot.io/api/?q=" + brand + "&lat=" + lat + "&lon=" + lon +
               "&osm_tag=shop:supermarket&limit=25&lang=de";
     return fetchJson(url, {}, 7000).then(function (d) {
       return { brand: brand, list: (d && d.features) || [] };
     }, function () { return null; });
   }));
-  if (!answers[0] && !answers[1]) return null;
+  if (answers.every(function (a) { return !a; })) return null;
   var elements = [];
   answers.forEach(function (a) {
     if (!a) return;
@@ -881,8 +974,11 @@ function marketFromOsm(el, origin) {
   var suburb = (t["addr:suburb"] || t["addr:quarter"] || "").trim();
 
   var name = (t.name || t.brand || "").trim();
-  var brand = /edeka/i.test(name + " " + (t.brand || "")) ? "EDEKA" : "REWE";
-  if (/^(rewe|edeka)$/i.test(name)) name = brand;          /* "Rewe" -> "REWE" */
+  var brand = camp.chains[0];
+  for (var c = 0; c < camp.chains.length; c++) {
+    if (new RegExp(camp.chains[c], "i").test(name + " " + (t.brand || ""))) { brand = camp.chains[c]; break; }
+  }
+  if (name.toLowerCase() === brand.toLowerCase()) name = brand;     /* "Rewe" -> "REWE" */
   if (t.branch && name.indexOf(t.branch) === -1) name += " " + t.branch;
 
   var streetPart = (street + " " + number).trim();
@@ -919,7 +1015,7 @@ async function searchMarkets() {
 
   try {
     setProgress("1/3: Bekannte Bezugsquellen prüfen", 15);
-    var known = NOT_EGG_STOCKISTS.concat(CUSTOM_MARKETS.map(function (m) {
+    var known = (camp.stockists || []).concat(CUSTOM_MARKETS.map(function (m) {
       var s = findStockist(m.brand, m.zip, (m.street || "").split(",")[0]);
       return Object.assign({ email: "", hasNotEgg: !!s }, m);
     })).filter(function (m) { return matchesQuery(m, query); })
@@ -938,7 +1034,7 @@ async function searchMarkets() {
 
     var found = [], skipped = 0, data = null;
     if (origin) {
-      setProgress("3/3: REWE- und EDEKA-Märkte im Umkreis suchen", 70);
+      setProgress("3/3: Märkte im Umkreis suchen", 70);
       data = await queryPhoton(origin.lat, origin.lon);
       if (stale()) return;
       if (!data || data.elements.length === 0) {       /* Reserve: Overpass */
@@ -991,7 +1087,7 @@ async function searchMarkets() {
     if (markets.length > 0) {
       var stocked = markets.filter(function (m) { return m.hasNotEgg; }).length;
       var msg = markets.length + (markets.length === 1 ? " Markt" : " Märkte") + " für „" + query + "“ gefunden";
-      if (stocked > 0) msg += ", davon " + stocked + " mit Not Egg";
+      if (stocked > 0) msg += ", davon " + stocked + " mit dem Produkt";
       msg += ".";
       if (mapsDown) msg += " Die Kartensuche war nicht erreichbar, die Liste ist deshalb unvollständig.";
       showStatus(msg, mapsDown);
@@ -1000,7 +1096,7 @@ async function searchMarkets() {
       showStatus("Die Kartensuche ist gerade nicht erreichbar. Versuch es gleich noch einmal oder trag deinen Markt unten selbst ein.", true);
       setManualMode(true);
     } else {
-      showStatus("Im Umkreis von 15 km um „" + query + "“ steht kein REWE oder EDEKA mit Adresse in der Karte. Trag deinen Markt bitte unten selbst ein.", true);
+      showStatus("Im Umkreis von 15 km um „" + query + "“ steht kein Markt von " + camp.chains.join(" oder ") + " mit Adresse in der Karte. Trag deinen Markt bitte unten selbst ein.", true);
       setManualMode(true);
     }
   } catch (err) {
@@ -1021,7 +1117,8 @@ async function searchMarkets() {
    ===================================================================== */
 
 function renderEmail() {
-  var topic = currentTopic();
+  var topics = selectedTopics();
+  var topic = topics[0];              /* bestimmt Betreff, intro, impact, outro */
   var market = currentMarket();
   var rcpt = camp.mode === "local" ? recipientsFor(market) : { to: camp.recipient || "", cc: camp.cc || "" };
 
@@ -1042,7 +1139,7 @@ function renderEmail() {
 
   var body = [
     pick(intro, roll.intro),
-    pick(topic.middleVariants, roll.middle),
+    topics.map(function (t, i) { return pick(t.middleVariants, roll.middle + i); }).join("\n\n"),
     pick(impact, roll.impact),
     pick(outro, roll.outro)
   ].join("\n\n");
@@ -1050,8 +1147,8 @@ function renderEmail() {
   $("preview-to").textContent = rcpt.to;
   $("preview-cc").textContent = rcpt.cc;
   $("preview-cc-wrap").classList.toggle("hidden", !rcpt.cc);
-  $("preview-subject").value = fill(pick(subjects, roll.subject), vars);
-  $("preview-body").value = fill(body, vars);
+  $("preview-subject").value = fill(spin(pick(subjects, roll.subject), roll.seed + 7), vars);
+  $("preview-body").value = fill(spin(body, roll.seed), vars);
   updateLinks();
 }
 
@@ -1094,10 +1191,44 @@ function guardSend(event) {
   hint.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 
+/* Link und QR-Code zur aktuellen Aktion (immer mit ?c=..., damit der
+   Umschalter für Gäste ausgeblendet ist).                              */
+function renderShare() {
+  var url = window.location.origin + window.location.pathname + "?c=" + encodeURIComponent(campKey);
+  $("share-url").textContent = url;
+  var canvas = $("share-qr");
+  var save = $("share-save");
+  if (typeof qrcode !== "function" || !canvas.getContext) {    /* Bibliothek nicht geladen */
+    canvas.classList.add("hidden");
+    save.classList.add("hidden");
+    return;
+  }
+  var qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+  var n = qr.getModuleCount(), cell = 10, margin = 4;
+  canvas.width = canvas.height = (n + margin * 2) * cell;
+  var ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#000000";
+  for (var r = 0; r < n; r++) {
+    for (var c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) ctx.fillRect((c + margin) * cell, (r + margin) * cell, cell, cell);
+    }
+  }
+  save.setAttribute("href", canvas.toDataURL("image/png"));
+  save.setAttribute("download", "qr-" + campKey + ".png");
+}
+
 function copyPart(part, btn) {
   var text = part === "to" ? $("preview-to").textContent
            : part === "subject" ? $("preview-subject").value
            : $("preview-body").value;
+  copyText(text, btn);
+}
+
+function copyText(text, btn) {
   var original = btn.textContent;
   var done = function (ok) {
     btn.textContent = ok ? "✅ Kopiert" : "⚠️ Bitte markieren";
