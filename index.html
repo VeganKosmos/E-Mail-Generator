@@ -370,79 +370,6 @@ var CAMPAIGNS = {
         ]
       }
     ]
-  },
-
-  /* ------------------------------------------------------------------ */
-  "veggieworld": {
-    mode: "direct",
-    short: "🎤 VeggieWorld",
-    title: "Feedback an die VeggieWorld",
-    description: "Schreib den Organisatoren der Messe (Wellfairs GmbH), was du von dem Vortrag im Bühnenprogramm hältst.",
-    /* info@wellfairs.de steht auf veggieworld.eco.
-       UNGEPRÜFT: info@veggieworld.de (aus der Vorversion). Zum Entfernen cc auf "" setzen. */
-    recipient: "info@wellfairs.de",
-    cc: "info@veggieworld.de",
-    topicLabel: "Was hat dich gestört? (mehrere möglich)",
-    multi: true,   /* mehrere Themen ankreuzbar, jedes wird ein eigener Absatz */
-    subjects: [
-      "Rückmeldung zu einem Vortrag auf der VeggieWorld",
-      "Kritik am Bühnenprogramm der VeggieWorld",
-      "VeggieWorld: Vortrag passt nicht zu einer veganen Messe",
-      "Feedback nach meinem Besuch der VeggieWorld"
-    ],
-    blocks: {
-      intro: [
-        "Guten Tag,\n\nich war auf der VeggieWorld und möchte Ihnen eine Rückmeldung zu einem der Vorträge geben.",
-        "Hallo liebes VeggieWorld-Team,\n\nich komme gern auf Ihre Messe. Diesmal bin ich aber mit einem unguten Gefühl nach Hause gegangen, und zwar wegen eines Vortrags.",
-        "Sehr geehrte Damen und Herren,\n\nich schreibe Ihnen wegen eines Vortrags auf der VeggieWorld, der mich ziemlich geärgert hat.",
-        "Hallo,\n\nnach meinem Besuch der VeggieWorld möchte ich Ihnen etwas zurückmelden, das mir seitdem nicht aus dem Kopf geht. Es geht um einen der Vorträge auf der Bühne.",
-        "Guten Tag,\n\ndie VeggieWorld ist für mich eigentlich ein fester Termin. Umso mehr hat mich diesmal ein Vortrag auf der Bühne enttäuscht."
-      ],
-      impact: [
-        "Ich fände es richtig, wenn Sie dazu öffentlich Stellung nehmen.",
-        "Mir ist die Messe wichtig, sonst würde ich Ihnen nicht schreiben.",
-        "Unterschiedliche Meinungen gehören auf eine Messe. Die Frage, ob Tiere ausgebeutet werden dürfen, sollte auf einer veganen Messe aber nicht zur Debatte stehen.",
-        "Ich hoffe, dass Sie solche Rückmeldungen ernst nehmen und nicht als Einzelmeinung abtun."
-      ],
-      outro: [
-        "Bitte achten Sie bei der nächsten VeggieWorld darauf, wer bei Ihnen auf der Bühne steht. Über eine Antwort würde ich mich freuen.\n\nMit freundlichen Grüßen\n{{user_name}}",
-        "Wie wollen Sie verhindern, dass so etwas noch einmal vorkommt? Auf Ihre Antwort bin ich gespannt.\n\nViele Grüße\n{{user_name}}",
-        "Ich würde gern wissen, wie Sie den Vortrag im Nachhinein bewerten.\n\nFreundliche Grüße\n{{user_name}}",
-        "Danke, dass Sie sich die Zeit für diese Rückmeldung nehmen.\n\nMit freundlichen Grüßen\n{{user_name}}"
-      ]
-    },
-    topics: [
-      {
-        id: "ethics",
-        label: "🐾 Der Vortrag widersprach veganen Werten",
-        middleVariants: [
-          "In dem Vortrag wurden Positionen vertreten, die mit Veganismus nichts zu tun haben. Im Gegenteil, sie widersprechen dem Gedanken, dass Tiere nicht für uns da sind.",
-          "Was dort gesagt wurde, passt für mich nicht zu einer Messe, die sich an vegan lebende Menschen richtet. Für mich geht es beim Veganismus um die Tiere, und genau das wurde dort infrage gestellt.",
-          "Dort wurden Dinge relativiert, die für mich zum Kern des Veganismus gehören. Auf einer veganen Messe hätte ich damit nicht gerechnet.",
-          "Viele Menschen leben vegan, weil sie Tierleid nicht mittragen wollen. Der Vortrag hat genau diese Haltung kleingeredet, und das auf der Bühne einer Messe, die mit dem veganen Lebensstil wirbt."
-        ]
-      },
-      {
-        id: "curation",
-        label: "🔍 Die Vortragenden wurden offenbar nicht geprüft",
-        middleVariants: [
-          "Mich würde interessieren, wie die Vortragenden ausgewählt werden. Bei diesem Beitrag hatte ich nicht den Eindruck, dass jemand vorher geprüft hat, ob die Inhalte zu einer veganen Messe passen.",
-          "Ich gehe davon aus, dass Sie das Programm vorab sichten. Umso weniger verstehe ich, wie dieser Vortrag es auf die Bühne geschafft hat, denn seine Kernaussagen stehen im Widerspruch zu veganen Werten.",
-          "Zur VeggieWorld kommen viele Leute, die sich zum ersten Mal mit dem Thema beschäftigen. Was auf der Bühne gesagt wird, nehmen sie als Position der Messe wahr. Deshalb finde ich es wichtig, dass Sie die Inhalte der Vorträge vorher prüfen, und das ist hier offenbar nicht passiert.",
-          "Ein Vortrag mit solchen Inhalten hätte aus meiner Sicht bei der Programmplanung auffallen müssen. Dass er trotzdem im offiziellen Programm stand, wirft für mich die Frage auf, nach welchen Kriterien Sie auswählen."
-        ]
-      },
-      {
-        id: "credibility",
-        label: "🤝 Das schadet Ausstellern und der Messe",
-        middleVariants: [
-          "Auf der Messe stehen viele Aussteller und Vereine, die sich seit Jahren für Tiere einsetzen. Ein solcher Vortrag auf der Bühne fällt ihnen in den Rücken.",
-          "Die VeggieWorld lebt davon, dass die vegane Community ihr vertraut. Mit Beiträgen wie diesem setzen Sie dieses Vertrauen aufs Spiel.",
-          "Ich empfehle die Messe sonst gern weiter. Nach diesem Vortrag fällt mir das schwerer, weil ich nicht mehr sicher bin, wofür die VeggieWorld inhaltlich steht.",
-          "Für viele ist die VeggieWorld das Gesicht der veganen Bewegung nach außen. Wenn dort Inhalte laufen, die veganen Grundsätzen widersprechen, schadet das der Messe und auch den Ausstellern, die dort aus Überzeugung stehen."
-        ]
-      }
-    ]
   }
 };
 
@@ -609,7 +536,7 @@ function initApp() {
   var bar = $("campaign-switcher");
   var box = $("switcher-buttons");
 
-  if (hasUrlCamp) {
+  if (hasUrlCamp || Object.keys(CAMPAIGNS).length < 2) {    /* nur eine Aktion: kein Umschalter */
     bar.classList.add("hidden");
   } else {
     Object.keys(CAMPAIGNS).forEach(function (key) {
