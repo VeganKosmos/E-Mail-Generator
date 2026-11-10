@@ -1,957 +1,1078 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VeganMail-O-Mat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { -webkit-tap-highlight-color: transparent; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VeganMail-O-Mat</title>
+<meta name="description" content="Schreib deinem Supermarkt in einer Minute eine E-Mail und wünsch dir vegane Produkte ins Sortiment.">
+<meta name="theme-color" content="#0f172a">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { -webkit-tap-highlight-color: transparent; }
+  /* 16px verhindert, dass iOS beim Antippen eines Feldes in die Seite zoomt.
+     Deshalb ist kein user-scalable=no mehr nötig und Zoomen bleibt erlaubt. */
+  @media (max-width: 640px) {
+    input, select, textarea { font-size: 16px !important; }
+  }
+</style>
 </head>
 <body class="bg-slate-100 min-h-screen py-4 px-3 sm:p-6 font-sans text-slate-800">
 
-  <div class="max-w-xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
-    
-    <!-- Kampagnen-Umschalter (wird automatisch ausgeblendet, wenn ?c= in der URL steht) -->
-    <div id="campaign-switcher" class="bg-slate-900 text-white px-4 py-2 text-xs flex items-center justify-between gap-2">
-      <span class="text-slate-400">Aktion:</span>
-      <div class="flex gap-1.5" id="switcher-buttons"></div>
-    </div>
+<div class="max-w-xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
 
-    <div class="p-5 sm:p-6">
-      <h1 id="camp-title" class="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight mb-1.5"></h1>
-      <p id="camp-desc" class="text-slate-600 text-sm leading-relaxed mb-5"></p>
-
-      <!-- SCHRITT 1: SUPERMARKT-SUCHE (Nur bei 'local') -->
-      <div id="local-search-section" class="mb-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 hidden">
-        <label class="block text-sm font-bold text-slate-800 mb-1.5">
-          Wo kaufst du ein? (PLZ oder Ort)
-        </label>
-        <div class="flex gap-2 mb-2.5">
-          <input type="text" id="zip-input" placeholder="z.B. 46240, 59846, Bochum..." 
-                 onkeydown="if(event.key==='Enter') searchGermanyMarkets()"
-                 class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-          <button onclick="searchGermanyMarkets()" id="search-btn" 
-                  class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shrink-0 transition">
-            Suchen
-          </button>
-        </div>
-
-        <!-- FORTSCHRITTS-ANZEIGE (PROGRESS BAR) -->
-        <div id="progress-container" class="hidden mb-3 bg-white p-2.5 rounded-lg border border-slate-200">
-          <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
-            <span id="progress-step-text">Starte Suche...</span>
-            <span id="progress-percent">10%</span>
-          </div>
-          <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-            <div id="progress-bar" class="bg-emerald-600 h-2 rounded-full transition-all duration-300" style="width: 10%"></div>
-          </div>
-        </div>
-
-        <!-- STATUS-HINWEIS -->
-        <div id="search-status" class="text-xs mb-2.5 px-3 py-2 rounded-lg hidden"></div>
-
-        <!-- DROPDOWN FÜR GEFUNDENE ECHTE MÄRKTE -->
-        <div id="dropdown-wrapper">
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Markt auswählen:</label>
-          <select id="market-select" onchange="onMarketChange()" 
-                  class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-2">
-          </select>
-
-          <!-- HINWEIS-BANNER WENN MARKT SCHON AUF NOT-EGG.DE GELISTET IST -->
-          <div id="already-listed-banner" class="hidden mb-2 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs leading-relaxed">
-            🎉 <strong>Gute Nachricht:</strong> Laut <a href="https://not-egg.de/bezugsquellen/" target="_blank" class="underline font-bold">not-egg.de/bezugsquellen</a> hat dieser Markt <strong>Not-Egg bereits im Sortiment!</strong><br>
-            💡 <em>Tipp: Wir haben deine E-Mail unten automatisch angepasst, damit du beim Markt nachfragen kannst, ob es aktuell vorrätig oder schon nachbestellt ist.</em>
-          </div>
-
-          <!-- DETAIL-KARTE ZUR MARKT-IDENTIFIKATION -->
-          <div id="market-detail-card" class="bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 space-y-1">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-bold text-slate-800" id="detail-name"></span>
-              <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11px] shrink-0" id="detail-brand"></span>
-            </div>
-            <div id="detail-address" class="text-slate-600"></div>
-            <div id="detail-extra" class="text-slate-400 text-[11px]"></div>
-          </div>
-        </div>
-
-        <!-- MANUELLE EINGABE (Wird nur genutzt, falls ein Markt auf der Karte fehlt) -->
-        <div class="mt-2 text-right">
-          <button type="button" onclick="toggleManualMarket()" id="manual-toggle-btn" class="text-[11px] text-slate-500 underline hover:text-slate-800">
-            Dein Markt fehlt in der Liste? Hier manuell eingeben
-          </button>
-        </div>
-
-        <div id="manual-market-box" class="hidden mt-2 pt-2.5 border-t border-slate-200 space-y-2">
-          <p class="text-xs text-slate-600 font-medium">Trage deinen echten Markt vor Ort ein (keine fiktiven Märkte):</p>
-          <div class="grid grid-cols-3 gap-2">
-            <select id="manual-brand" onchange="renderEmail()" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white font-bold">
-              <option value="REWE">REWE</option>
-              <option value="EDEKA">EDEKA</option>
-            </select>
-            <input type="text" id="manual-name" oninput="renderEmail()" placeholder="Name (z.B. EDEKA Müller)" class="col-span-2 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
-          </div>
-          <input type="text" id="manual-street" oninput="renderEmail()" placeholder="Straße, Hausnr. & Ort (z.B. Hauptstr. 5, 59846 Sundern)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
-        </div>
-      </div>
-
-      <!-- SCHRITT 2: WAS SOLL IN DIE E-MAIL? -->
-      <div id="topic-section" class="mb-5">
-        <label class="block text-sm font-bold text-slate-800 mb-2" id="topic-label">
-          Was soll in die E-Mail?
-        </label>
-        <div id="topic-buttons" class="grid grid-cols-1 gap-2"></div>
-      </div>
-
-      <!-- SCHRITT 3: NAME -->
-      <div class="mb-5">
-        <label class="block text-sm font-bold text-slate-800 mb-1.5">
-          Dein Name
-        </label>
-        <input type="text" id="user-name" placeholder="Vor- und Nachname..." 
-               oninput="renderEmail()" 
-               class="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-      </div>
-
-      <!-- SCHRITT 4: E-MAIL VORSCHAU -->
-      <div class="mb-5">
-        <div class="flex justify-between items-center mb-2">
-          <label class="text-sm font-bold text-slate-800">Deine E-Mail</label>
-          <button onclick="rollNewCombination()" 
-                  class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg font-bold transition">
-            🎲 Neu würfeln
-          </button>
-        </div>
-
-        <!-- SAUBER GETRENNTE EMPFÄNGER- & CC-ZEILEN (Kein Überlappen mehr auf dem Handy!) -->
-        <div class="bg-slate-50 border border-slate-300 rounded-t-xl p-2.5 border-b-0 space-y-1">
-          <div class="text-xs text-slate-500 break-all">
-            An: <strong id="preview-to" class="font-mono text-slate-800"></strong>
-          </div>
-          <div id="preview-cc-wrap" class="text-xs text-slate-400 font-mono break-all hidden">
-            Kopie (CC): <span id="preview-cc"></span>
-          </div>
-          <div class="pt-1.5 border-t border-slate-200">
-            <input type="text" id="preview-subject" 
-                   oninput="updateMailtoLink()"
-                   class="w-full bg-transparent font-bold text-sm text-slate-900 focus:outline-none">
-          </div>
-        </div>
-
-        <textarea id="preview-body" rows="9" 
-                  oninput="updateMailtoLink()"
-                  class="w-full border border-slate-300 rounded-b-xl p-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans"></textarea>
-      </div>
-
-      <!-- SCHRITT 5: ABSENDEN & KOPIEREN -->
-      <div class="space-y-2.5">
-        <a id="mailto-btn" href="#" 
-           class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md text-center text-base transition">
-          ✉️ E-Mail-App öffnen & senden
-        </a>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs pt-1">
-          <button onclick="copyPart('to', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2 rounded-lg border border-slate-200">
-            📋 Empfänger
-          </button>
-          <button onclick="copyPart('subject', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2 rounded-lg border border-slate-200">
-            📋 Betreff
-          </button>
-          <button onclick="copyPart('body', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-2 rounded-lg border border-slate-200">
-            📋 Text
-          </button>
-          <a id="gmail-btn" href="#" target="_blank" rel="noopener" 
-             class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-2 px-2 rounded-lg border border-red-200 text-center">
-            🌐 Gmail
-          </a>
-        </div>
-      </div>
-
-    </div>
+  <!-- Kampagnen-Umschalter (wird ausgeblendet, wenn ?c= in der URL steht) -->
+  <div id="campaign-switcher" class="bg-slate-900 text-white px-4 py-2 text-xs flex items-center justify-between gap-2">
+    <span class="text-slate-400">Aktion:</span>
+    <div class="flex flex-wrap justify-end gap-1.5" id="switcher-buttons"></div>
   </div>
 
-  <script>
-    // =========================================================================
-    // 1. OFFIZIELLE BEZUGSQUELLEN VON NOT-EGG.DE/BEZUGSQUELLEN/ (Stand: 11/2026)
-    // Wenn ein Markt hier gelistet ist, warnt die App den Nutzer & schlägt die
-    // Verfügbarkeits-/Nachbestell-E-Mail vor!
-    // =========================================================================
-    const NOT_EGG_STOCKISTS = [
-      { zip: "97631", brand: "EDEKA", name: "Edeka Höchner", street: "Hoher Markstein 6, 97631 Bad Königshofen", streetKey: "hoher markstein", hasNotEgg: true },
-      { zip: "12587", brand: "EDEKA", name: "Edeka Voigt", street: "Bölschestr. 36, 12587 Berlin", streetKey: "bölschestr", hasNotEgg: true },
-      { zip: "10245", brand: "REWE", name: "REWE Henkelmann", street: "Revaler Str. 33, 10245 Berlin", streetKey: "revaler", hasNotEgg: true },
-      { zip: "10243", brand: "REWE", name: "REWE Voll Pflanzlich", street: "Warschauer Str. 33, 10243 Berlin", streetKey: "warschauer", hasNotEgg: true },
-      { zip: "44789", brand: "REWE", name: "REWE Freidank Bochum", street: "Joachimstr. 27-29, 44789 Bochum", streetKey: "joachimstr", hasNotEgg: true },
-      { zip: "28207", brand: "REWE", name: "REWE Hohwisch", street: "Auf der Hohwisch 42, 28207 Bremen (Hastedt)", streetKey: "hohwisch", hasNotEgg: true },
-      { zip: "28217", brand: "REWE", name: "REWE Rena Magdalena Langosz", street: "Am Winterhafen 5, 28217 Bremen", streetKey: "winterhafen", hasNotEgg: true },
-      { zip: "76646", brand: "REWE", name: "REWE Jens Ullmann", street: "John-Bopp-Str. 10, 76646 Bruchsal", streetKey: "john-bopp", hasNotEgg: true },
-      { zip: "89165", brand: "EDEKA", name: "Edeka Daus", street: "Räuchlestraße 1, 89165 Dietenheim", streetKey: "räuchlestr", hasNotEgg: true },
-      { zip: "44141", brand: "EDEKA", name: "Edeka Wegner", street: "Märkische Str. 82a, 44141 Dortmund", streetKey: "märkische str. 82", hasNotEgg: true },
-      { zip: "44139", brand: "REWE", name: "REWE Freidank", street: "Landgrafenstr. 153, 44139 Dortmund", streetKey: "landgrafenstr", hasNotEgg: true },
-      { zip: "44141", brand: "REWE", name: "REWE Freidank", street: "Märkische Str. 75, 44141 Dortmund", streetKey: "märkische str. 75", hasNotEgg: true },
-      { zip: "44139", brand: "REWE", name: "REWE Freidank", street: "Saarlandstr. 76-78, 44139 Dortmund", streetKey: "saarlandstr", hasNotEgg: true },
-      { zip: "44267", brand: "REWE", name: "REWE Homberg", street: "Pfarrer-Rüter-Weg 2, 44267 Dortmund", streetKey: "pfarrer-rüter", hasNotEgg: true },
-      { zip: "73479", brand: "EDEKA", name: "Edeka Schnell", street: "Konrad-Adenauer-Straße 36, 73479 Ellwangen (Jagst)", streetKey: "konrad-adenauer-straße 36", hasNotEgg: true },
-      { zip: "25336", brand: "REWE", name: "REWE Ide", street: "Westerstr. 34, 25336 Elmshorn", streetKey: "westerstr", hasNotEgg: true },
-      { zip: "85354", brand: "REWE", name: "REWE Stanisic Schlüter Hallen", street: "Münchner Str. 32, 85354 Freising", streetKey: "münchner str. 32", hasNotEgg: true },
-      { zip: "23683", brand: "REWE", name: "REWE Haase Haffkrug", street: "Waldweg 2b, 23683 Haffkrug", streetKey: "waldweg 2", hasNotEgg: true },
-      { zip: "22765", brand: "EDEKA", name: "Edeka Hirche Altona", street: "Harkortstraße 81C, 22765 Hamburg (Altona)", streetKey: "harkortstr", hasNotEgg: true },
-      { zip: "20259", brand: "EDEKA", name: "Edeka Hirche Eimsbüttel", street: "Eimsbütteler Chaussee 17, 20259 Hamburg (Eimsbüttel)", streetKey: "eimsbütteler chaussee", hasNotEgg: true },
-      { zip: "20146", brand: "REWE", name: "REWE Menz Eimsbüttel", street: "Grindelallee 40-44, 20146 Hamburg (Eimsbüttel)", streetKey: "grindelallee", hasNotEgg: true },
-      { zip: "22307", brand: "REWE", name: "REWE Nicholas Otto Barmbek", street: "Steilshooper Str. 190, 22307 Hamburg (Barmbek)", streetKey: "steilshooper", hasNotEgg: true },
-      { zip: "97461", brand: "EDEKA", name: "Edeka Höchner Hofheim", street: "Am Sänniggrund 8, 97461 Hofheim", streetKey: "sänniggrund", hasNotEgg: true },
-      { zip: "25524", brand: "REWE", name: "REWE Denis Poellath", street: "Lise-Meitner-Str. 16, 25524 Itzehoe", streetKey: "lise-meitner", hasNotEgg: true },
-      { zip: "50933", brand: "REWE", name: "REWE Weis Braunsfeld", street: "Stolberger Str. 345, 50933 Köln (Braunsfeld)", streetKey: "stolberger", hasNotEgg: true },
-      { zip: "50767", brand: "REWE", name: "REWE Weis Heimersdorf", street: "Haselnussweg 33-35, 50767 Köln (Heimersdorf)", streetKey: "haselnussweg", hasNotEgg: true },
-      { zip: "26736", brand: "EDEKA", name: "Edeka Schröllkamp", street: "Schatthausstraße 2a, 26736 Krummhörn-Pewsum", streetKey: "schatthausstr", hasNotEgg: true },
-      { zip: "59348", brand: "REWE", name: "REWE Gawdi Lüdinghausen", street: "Konrad-Adenauer-Str. 6, 59348 Lüdinghausen", streetKey: "konrad-adenauer-str. 6", hasNotEgg: true },
-      { zip: "35037", brand: "REWE", name: "REWE EinsA Marburg", street: "Erlenring 9, 35037 Marburg", streetKey: "erlenring", hasNotEgg: true },
-      { zip: "45470", brand: "REWE", name: "REWE Scholand", street: "Essener Str. 50, 45470 Mülheim an der Ruhr", streetKey: "essener str. 50", hasNotEgg: true },
-      { zip: "23730", brand: "REWE", name: "REWE Haase Neustadt", street: "Sierksdorfer Str. 8, 23730 Neustadt in Holstein", streetKey: "sierksdorfer", hasNotEgg: true },
-      { zip: "48529", brand: "REWE", name: "REWE Döring Nordhorn", street: "Friedrich-Ebert-Str. 2, 48529 Nordhorn", streetKey: "friedrich-ebert-str. 2", hasNotEgg: true },
-      { zip: "53757", brand: "REWE", name: "REWE Pfleger", street: "Schulstr. 5, 53757 Sankt Augustin", streetKey: "schulstr. 5", hasNotEgg: true },
-      { zip: "97424", brand: "EDEKA", name: "Edeka Höchner Schweinfurt", street: "Oskar-von-Miller-Straße 6, 97424 Schweinfurt", streetKey: "oskar-von-miller", hasNotEgg: true },
-      { zip: "59379", brand: "REWE", name: "REWE Gawdi Selm", street: "Kreisstr. 92, 59379 Selm", streetKey: "kreisstr. 92", hasNotEgg: true }
-    ];
+  <div class="p-5 sm:p-6">
+    <h1 id="camp-title" class="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight mb-1.5"></h1>
+    <p id="camp-desc" class="text-slate-600 text-sm leading-relaxed mb-5"></p>
 
-    // Vorab-Märkte (Startauswahl + verifizierte Beispiele)
-    const CUSTOM_MARKETS = [
-      { zip: "40667", brand: "REWE", name: "REWE Markt Meerbusch-Büderich", street: "Düsseldorfer Str. 10, 40667 Meerbusch (Büderich)", operator: "REWE Markt GmbH", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: false },
-      { zip: "40667", brand: "EDEKA", name: "EDEKA Nettersheim", street: "Moerser Str. 45, 40667 Meerbusch (Büderich)", operator: "Edeka Nettersheim", hours: "Mo-Sa 07:00-21:00", email: "", hasNotEgg: false },
-      { zip: "46240", brand: "EDEKA", name: "EDEKA Zurheide Bottrop", street: "Gladbecker Str. 130, 46240 Bottrop (Eigen)", operator: "Zurheide Feine Kost", hours: "Mo-Sa 07:00-21:00", email: "", hasNotEgg: false },
-      { zip: "46240", brand: "REWE", name: "REWE Markt Bottrop", street: "Johannes-Rau-Str. 17, 46240 Bottrop", operator: "REWE", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: false },
-      { zip: "59846", brand: "EDEKA", name: "EDEKA Cramer Sundern", street: "Freiheitsmühle 1, 59846 Sundern (Sauerland)", operator: "EDEKA Cramer", hours: "Mo-Sa 07:00-21:00", email: "info@edeka-cramer.de", hasNotEgg: false },
-      { zip: "59846", brand: "REWE", name: "REWE Brücken Sundern-Hachen", street: "Hachener Str. 126, 59846 Sundern (Hachen)", operator: "Michael Brücken Kaufpark oHG", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: false },
-      { zip: "44789", brand: "REWE", name: "REWE Freidank Bochum", street: "Joachimstr. 27-29, 44789 Bochum", operator: "REWE Freidank", hours: "Mo-Sa 07:00-22:00", email: "", hasNotEgg: true }
-    ];
+    <!-- SCHRITT 1: MARKTSUCHE (nur bei mode "local") -->
+    <div id="local-search-section" class="mb-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 hidden">
+      <label for="zip-input" class="block text-sm font-bold text-slate-800 mb-1.5">Wo kaufst du ein? (PLZ oder Ort)</label>
+      <div class="flex gap-2 mb-2.5">
+        <input type="text" id="zip-input" inputmode="search" enterkeyhint="search" autocomplete="postal-code"
+          placeholder="z.B. 44789 oder Bochum"
+          class="w-full min-w-0 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+        <button type="button" id="search-btn"
+          class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-sm font-bold shrink-0 transition">Suchen</button>
+      </div>
 
-    function checkIfStockist(zip, name, street) {
-      var combinedStr = ((name || "") + " " + (street || "")).toLowerCase();
-      for (var i = 0; i < NOT_EGG_STOCKISTS.length; i++) {
-        var s = NOT_EGG_STOCKISTS[i];
-        if (s.zip === zip && combinedStr.indexOf(s.streetKey) !== -1) {
-          return true;
-        }
-      }
-      return false;
-    }
+      <!-- Fortschritt -->
+      <div id="progress-container" class="hidden mb-3 bg-white p-2.5 rounded-lg border border-slate-200">
+        <div class="flex justify-between gap-2 text-xs font-semibold text-slate-700 mb-1">
+          <span id="progress-step-text"></span>
+          <span id="progress-percent"></span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+          <div id="progress-bar" class="bg-emerald-600 h-2 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+      </div>
 
-    function getEdekaRegionalEmail(zipStr) {
-      const prefix = parseInt((zipStr || "").substring(0, 2), 10);
-      if (isNaN(prefix)) return "info@edeka.de";
-      if ((prefix >= 20 && prefix <= 25) || prefix === 18 || prefix === 19) return "kundenservice.nord@edeka.de";
-      if ((prefix >= 1 && prefix <= 17) || (prefix >= 26 && prefix <= 33) || prefix === 38 || prefix === 39) return "kundenservice@minden.edeka.de";
-      if (prefix >= 40 && prefix <= 59) return "kundenservice.nordwest@edeka.de";
-      if (prefix >= 34 && prefix <= 37) return "kundenservice@edeka-hessenring.de";
-      if (prefix >= 60 && prefix <= 79) return "kundenservice@edeka-suedwest.de";
-      if (prefix >= 90 && prefix <= 99) return "kundenservice.nbst@edeka.de";
-      if (prefix >= 80 && prefix <= 89) return "kundenservice.suedbayern@edeka.de";
-      return "info@edeka.de";
-    }
+      <!-- Status -->
+      <div id="search-status" class="text-xs mb-2.5 px-3 py-2 rounded-lg hidden" role="status"></div>
 
-    const CAMPAIGNS = {
-      "not-egg": {
-        mode: "local",
-        title: "Wünsch dir Not-Egg! 🍳",
-        description: "Der 30-Sekunden-Marktfinder: Bring das pflanzliche Spiegelei 'Not Egg' in deinen lokalen REWE oder EDEKA.",
-        topicLabel: "Was soll in die E-Mail?",
-        topics: [
-          {
-            id: "neutral",
-            label: "📄 Kurz & sachlich nach dem Produkt fragen (Standard)",
-            middleVariants: [
-              "Ich möchte mich erkundigen, ob Sie das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) in Ihr Sortiment aufnehmen können. Bisher konnte ich das Produkt in Ihrer Tiefkühlabteilung leider noch nicht finden.",
-              "Konkret suche ich in Ihrem Tiefkühlsortiment das vegane Spiegelei 'Not Egg' (Infos unter https://not-egg.de). Ich würde dieses Produkt sehr gerne regelmäßig bei meinem Einkauf in Ihrem Markt erwerben.",
-              "Gerne möchte ich anregen, die pflanzliche Ei-Alternative 'Not Egg' (https://not-egg.de) für die Tiefkühltruhe in Ihrer Filiale zu listen. Es handelt sich um ein fertiges Spiegelei auf rein pflanzlicher Basis.",
-              "Bei meinen Einkäufen in Ihrem Markt halte ich nach dem veganen Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) Ausschau und würde mich sehr freuen, wenn Sie dieses Produkt ins Sortiment aufnehmen."
-            ]
-          },
-          {
-            id: "social",
-            label: "📱 Online / auf Social Media entdeckt",
-            middleVariants: [
-              "Über Social Media und das Internet bin ich auf das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) aufmerksam geworden und würde es sehr gerne bei Ihnen vor Ort kaufen.",
-              "Ich habe online schon viel Positives über die vegane Ei-Alternative 'Not Egg' (https://not-egg.de) für die Tiefkühltruhe gesehen und hoffe sehr, dass es bald auch in Ihrem Markt erhältlich ist.",
-              "In den sozialen Medien wird aktuell viel über das neue pflanzliche Spiegelei 'Not Egg' (https://not-egg.de) berichtet. Ich würde das Tiefkühlprodukt unheimlich gerne bei meinem Wocheneinkauf in Ihrer Filiale mitnehmen.",
-              "Online habe ich das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) entdeckt. Da ich lieber lokal bei Ihnen im Markt einkaufe statt online zu bestellen, wünsche ich mir das Produkt sehr für Ihr Tiefkühlregal."
-            ]
-          },
-          {
-            id: "distance",
-            label: "🚗 Fahre aktuell extra weit zu einem anderen Markt",
-            middleVariants: [
-              "Aktuell muss ich für das pflanzliche Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) extra einen weiten Weg auf mich nehmen, würde es aber viel lieber direkt bei meinem Stammeinkauf in Ihrer Filiale kaufen.",
-              "Ich kaufe das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) sehr regelmäßig, muss dafür momentan aber immer umständlich weiter weg fahren. Es wäre großartig, wenn Sie es direkt bei sich im Markt listen könnten.",
-              "Um 'Not Egg' (https://not-egg.de) für die Tiefkühltruhe zu bekommen, nehme ich derzeit noch längere Fahrten in Kauf. Viel lieber würde ich meinen gesamten Einkauf inklusive Not Egg direkt bei Ihnen erledigen.",
-              "Da 'Not Egg' (https://not-egg.de) für mich fest zum Speiseplan gehört, fahre ich dafür aktuell noch extra in andere Läden. Wenn Sie das Tiefkühlprodukt aufnehmen, kaufe ich es ab sofort direkt in Ihrer Filiale."
-            ]
-          },
-          {
-            id: "taste",
-            label: "🍳 Auf der VeggieWorld probiert & begeistert",
-            middleVariants: [
-              "Auf der VeggieWorld konnte ich 'Not Egg' (https://not-egg.de) probieren – ein pflanzliches Spiegelei für die Tiefkühlabteilung, das optisch und geschmacklich absolut überzeugt.",
-              "Kürzlich habe ich auf der VeggieWorld das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) entdeckt. Sowohl die Konsistenz als auch das flüssige Eigelb auf Pflanzenbasis haben mich begeistert.",
-              "Durch die Messe VeggieWorld bin ich auf 'Not Egg' (https://not-egg.de) aufmerksam geworden. Es handelt sich um ein pflanzliches Spiegelei aus dem Tiefkühlbereich, das ich seitdem im Supermarkt suche.",
-              "Ich habe auf der VeggieWorld das pflanzliche Spiegelei 'Not Egg' (https://not-egg.de) getestet und war begeistert, wie authentisch es in der Pfanne gelingt. Es wird als Tiefkühlprodukt angeboten."
-            ]
-          },
-          {
-            id: "restock",
-            label: "🔄 Markt führt es schon: Fragen ob vorrätig / ausverkauft",
-            middleVariants: [
-              "Auf https://not-egg.de/bezugsquellen/ habe ich gesehen, dass Ihr Markt das pflanzliche Tiefkühl-Spiegelei 'Not Egg' bereits im Sortiment führt! Ich wollte kurz nachfragen, ob das Produkt aktuell in Ihrer Tiefkühltruhe vorrätig ist oder wann die nächste Lieferung eintrifft.",
-              "Es freut mich riesig, dass Ihre Filiale bereits als offizielle Bezugsquelle für das vegane TK-Spiegelei 'Not Egg' (https://not-egg.de) gelistet ist. Könnten Sie mir kurz mitteilen, in welcher Tiefkühltruhe ich es bei Ihnen finde bzw. ob es gerade auf Lager ist?",
-              "Da Ihr Markt laut Hersteller-Website bereits das pflanzliche Spiegelei 'Not Egg' anbietet, wollte ich mich vor meinem nächsten Einkauf kurz erkundigen, ob aktuell noch Packungen im Tiefkühlbereich verfügbar sind oder ob es derzeit ausverkauft ist.",
-              "Vielen Dank, dass Sie das vegane Tiefkühl-Spiegelei 'Not Egg' (https://not-egg.de) bereits in Ihrem Markt aufgenommen haben! Ich konnte es beim letzten Mal in der Tiefkühlabteilung nicht direkt entdecken – ist es aktuell vorrätig oder bereits nachbestellt?"
-            ]
-          }
-        ],
-        subjects: [
-          "Sortimentswunsch für {{market_name}}: Pflanzliches Spiegelei 'Not Egg' (TK)",
-          "Kundenanfrage ({{market_street}}): Aufnahme von 'Not Egg' ins Tiefkühlsortiment",
-          "Produktwunsch für Ihre Filiale ({{market_name}}) – Veganes Ei 'Not Egg'",
-          "Anfrage zum TK-Sortiment bei {{market_name}} ({{market_street}}): Not Egg"
-        ],
-        restockSubjects: [
-          "Verfügbarkeitsanfrage für {{market_name}}: Pflanzliches Spiegelei 'Not Egg' (TK)",
-          "Kurze Nachfrage ({{market_street}}): Ist 'Not Egg' aktuell im Tiefkühlregal vorrätig?",
-          "Kundenfrage zu 'Not Egg' in Ihrer Filiale ({{market_name}})"
-        ],
-        blocks: {
-          intro: [
-            "Hallo liebes Team vom {{market_name}},\n\nich kaufe regelmäßig bei Ihnen in der Filiale ({{market_street}}) ein und wende mich heute mit einer kurzen Anfrage an Sie.",
-            "Guten Tag,\n\nals Kundin bzw. Kunde Ihres Marktes ({{market_name}}, {{market_street}}) habe ich ein kurzes Anliegen zu Ihrer Tiefkühlabteilung.",
-            "Liebes Team von {{market_name}},\n\nda ich meine Einkäufe sehr gerne bei Ihnen in der Filiale ({{market_street}}) erledige, möchte ich Ihnen heute kurz schreiben.",
-            "Hallo und guten Tag,\n\nich besuche Ihren Markt ({{market_name}}, {{market_street}}) regelmäßig und schätze Ihr bestehendes Angebot an pflanzlichen Produkten sehr."
-          ],
-          impact: [
-            "Bei uns im Haushalt steht das Produkt fest auf der Einkaufsliste, sodass wir es in Ihrer Filiale ({{market_street}}) regelmäßig mitnehmen würden.",
-            "Für Ihr Tiefkühlregal ist das eine tolle Bereicherung, über die sich auch viele weitere Kundinnen und Kunden in der Umgebung freuen.",
-            "Da das Produkt tiefgekühlt lange haltbar ist, passt es hervorragend in eine gut sortierte Tiefkühlabteilung.",
-            "Alle Informationen zur Bestellung für Märkte finden Sie direkt unter https://not-egg.de bzw. über info@vonher.de."
-          ],
-          outro: [
-            "Über eine kurze Rückmeldung aus Ihrer Filiale ({{market_street}}) freue ich mich sehr!\n\nViele Grüße\n{{user_name}}",
-            "Es wäre klasse, wenn Sie diese Nachricht kurz an die Marktleitung bzw. das zuständige Team weiterleiten könnten. Vielen Dank für Ihre Mühe!\n\nBeste Grüße\n{{user_name}}",
-            "Vielen Dank vorab für Ihre Zeit und die kurze Prüfung!\n\nFreundliche Grüße\n{{user_name}}",
-            "Geben Sie mir gerne kurz Bescheid. Vielen Dank für Ihren tollen Kundenservice!\n\nHerzliche Grüße\n{{user_name}}"
-          ]
-        }
+      <!-- Gefundene Märkte -->
+      <div id="dropdown-wrapper" class="hidden">
+        <label for="market-select" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Markt auswählen</label>
+        <select id="market-select"
+          class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-2"></select>
+
+        <div id="already-listed-banner" class="hidden mb-2 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs leading-relaxed">
+          <strong>Dieser Markt führt Not Egg schon</strong>, zumindest laut
+          <a href="https://not-egg.de/bezugsquellen/" target="_blank" rel="noopener" class="underline font-bold">not-egg.de/bezugsquellen</a>.
+          Die E-Mail unten fragt deshalb nur nach, ob es gerade vorrätig ist.
+        </div>
+
+        <div id="market-detail-card" class="bg-white border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-slate-800" id="detail-name"></span>
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11px] shrink-0" id="detail-brand"></span>
+          </div>
+          <div id="detail-address"></div>
+          <div id="detail-extra" class="text-slate-400 text-[11px]"></div>
+        </div>
+      </div>
+
+      <!-- Manuelle Eingabe -->
+      <div class="mt-2 text-right">
+        <button type="button" id="manual-toggle-btn" class="text-xs text-slate-500 underline hover:text-slate-800 py-1"></button>
+      </div>
+      <div id="manual-market-box" class="hidden mt-2 pt-2.5 border-t border-slate-200 space-y-2">
+        <p class="text-xs text-slate-600 font-medium">Trag den Markt ein, in dem du wirklich einkaufst:</p>
+        <div class="grid grid-cols-3 gap-2">
+          <select id="manual-brand" aria-label="Kette" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white font-bold">
+            <option value="REWE">REWE</option>
+            <option value="EDEKA">EDEKA</option>
+          </select>
+          <input type="text" id="manual-name" aria-label="Name des Marktes" placeholder="Name (z.B. EDEKA Müller)"
+            class="col-span-2 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
+        </div>
+        <input type="text" id="manual-street" aria-label="Adresse des Marktes" placeholder="Straße, Hausnr., PLZ und Ort"
+          class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
+      </div>
+
+      <p class="mt-2.5 text-[11px] text-slate-400 leading-snug">
+        Marktdaten © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" class="underline">OpenStreetMap-Mitwirkende</a>.
+        Deine Eingabe geht nur an die Kartensuche, sonst wird nichts gespeichert oder übertragen.
+      </p>
+    </div>
+
+    <!-- SCHRITT 2: THEMA -->
+    <div id="topic-section" class="mb-5">
+      <div class="block text-sm font-bold text-slate-800 mb-2" id="topic-label"></div>
+      <div id="topic-buttons" class="grid grid-cols-1 gap-2"></div>
+    </div>
+
+    <!-- SCHRITT 3: NAME -->
+    <div class="mb-5">
+      <label for="user-name" class="block text-sm font-bold text-slate-800 mb-1.5">Dein Name</label>
+      <input type="text" id="user-name" autocomplete="name" placeholder="Vor- und Nachname"
+        class="w-full border border-slate-300 rounded-xl px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+    </div>
+
+    <!-- SCHRITT 4: VORSCHAU -->
+    <div class="mb-5">
+      <div class="flex justify-between items-center mb-2">
+        <label for="preview-body" class="text-sm font-bold text-slate-800">Deine E-Mail</label>
+        <button type="button" id="roll-btn"
+          class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold transition">🎲 Anderer Text</button>
+      </div>
+      <div class="bg-slate-50 border border-slate-300 rounded-t-xl p-2.5 border-b-0 space-y-1">
+        <div class="text-xs text-slate-500 break-all">An: <strong id="preview-to" class="font-mono text-slate-800"></strong></div>
+        <div id="preview-cc-wrap" class="text-xs text-slate-400 font-mono break-all hidden">Kopie (CC): <span id="preview-cc"></span></div>
+        <div class="pt-1.5 border-t border-slate-200">
+          <input type="text" id="preview-subject" aria-label="Betreff"
+            class="w-full bg-transparent font-bold text-sm text-slate-900 focus:outline-none">
+        </div>
+      </div>
+      <textarea id="preview-body" rows="11"
+        class="w-full border border-slate-300 rounded-b-xl p-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans"></textarea>
+      <p class="mt-1 text-[11px] text-slate-400">Du kannst Betreff und Text frei ändern. Eigene Sätze kommen am besten an.</p>
+    </div>
+
+    <!-- SCHRITT 5: SENDEN -->
+    <div class="space-y-2.5">
+      <div id="send-hint" class="hidden text-xs px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900" role="alert"></div>
+      <a id="mailto-btn" href="#"
+        class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-md text-center text-base transition">✉️ In E-Mail-App öffnen</a>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs pt-1">
+        <button type="button" data-copy="to" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-2 rounded-lg border border-slate-200">📋 Empfänger</button>
+        <button type="button" data-copy="subject" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-2 rounded-lg border border-slate-200">📋 Betreff</button>
+        <button type="button" data-copy="body" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 px-2 rounded-lg border border-slate-200">📋 Text</button>
+        <a id="gmail-btn" href="#" target="_blank" rel="noopener"
+          class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-2.5 px-2 rounded-lg border border-red-200 text-center">🌐 Gmail</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   DATEN
+   ===================================================================== */
+
+/* Supermärkte von https://not-egg.de/bezugsquellen/ (nur REWE und EDEKA).
+   Stand: 10.11.2026. Format: [PLZ, Kette, Name, Adresse]            */
+var NOT_EGG_STOCKISTS = [
+  ["97631", "EDEKA", "EDEKA Höchner", "Hoher Markstein 6, 97631 Bad Königshofen"],
+  ["12587", "EDEKA", "EDEKA Voigt", "Bölschestr. 36, 12587 Berlin"],
+  ["10245", "REWE", "REWE Henkelmann", "Revaler Str. 33, 10245 Berlin"],
+  ["10243", "REWE", "REWE Voll Pflanzlich", "Warschauer Str. 33, 10243 Berlin"],
+  ["44789", "REWE", "REWE Freidank", "Joachimstr. 27-29, 44789 Bochum"],
+  ["28207", "REWE", "REWE Hohwisch", "Auf der Hohwisch 42, 28207 Bremen"],
+  ["28217", "REWE", "REWE Rena Magdalena Langosz", "Am Winterhafen 5, 28217 Bremen"],
+  ["76646", "REWE", "REWE Jens Ullmann", "John-Bopp-Str. 10, 76646 Bruchsal"],
+  ["89165", "EDEKA", "EDEKA Daus", "Räuchlestraße 1, 89165 Dietenheim"],
+  ["44141", "EDEKA", "EDEKA Wegner", "Märkische Str. 82a, 44141 Dortmund"],
+  ["44139", "REWE", "REWE Freidank", "Landgrafenstr. 153, 44139 Dortmund"],
+  ["44141", "REWE", "REWE Freidank", "Märkische Str. 75, 44141 Dortmund"],
+  ["44139", "REWE", "REWE Freidank", "Saarlandstr. 76-78, 44139 Dortmund"],
+  ["44267", "REWE", "REWE Homberg", "Pfarrer-Rüter-Weg 2, 44267 Dortmund"],
+  ["73479", "EDEKA", "EDEKA Schnell", "Konrad-Adenauer-Straße 36, 73479 Ellwangen (Jagst)"],
+  ["25336", "REWE", "REWE Ide", "Westerstr. 34, 25336 Elmshorn"],
+  ["85354", "REWE", "REWE Stanisic Schlüter Hallen", "Münchner Str. 32, 85354 Freising"],
+  ["23683", "REWE", "REWE Haase", "Waldweg 2b, 23683 Haffkrug"],
+  ["22765", "EDEKA", "EDEKA Hirche Altona", "Harkortstraße 81C, 22765 Hamburg"],
+  ["20259", "EDEKA", "EDEKA Hirche Eimsbüttel", "Eimsbütteler Chaussee 17, 20259 Hamburg"],
+  ["20146", "REWE", "REWE Menz Eimsbüttel", "Grindelallee 40-44, 20146 Hamburg"],
+  ["22307", "REWE", "REWE Nicholas Otto Barmbek", "Steilshooper Str. 190, 22307 Hamburg"],
+  ["97461", "EDEKA", "EDEKA Höchner", "Am Sänniggrund 8, 97461 Hofheim"],
+  ["25524", "REWE", "REWE Denis Poellath", "Lise-Meitner-Str. 16, 25524 Itzehoe"],
+  ["50829", "REWE", "REWE Weis Bocklemünd", "Görlinger Zentrum 24, 50829 Köln"],
+  ["50933", "REWE", "REWE Weis Braunsfeld", "Stolberger Str. 345, 50933 Köln"],
+  ["50767", "REWE", "REWE Weis Heimersdorf", "Haselnussweg 33-35, 50767 Köln"],
+  ["26736", "EDEKA", "EDEKA Schröllkamp", "Schatthausstraße 2a, 26736 Krummhörn-Pewsum"],
+  ["59348", "REWE", "REWE Gawdi", "Konrad-Adenauer-Str. 6, 59348 Lüdinghausen"],
+  ["21335", "EDEKA", "EDEKA Tschorn Bockelsberg", "Universitätsallee 13, 21335 Lüneburg"],
+  ["21335", "EDEKA", "EDEKA Tschorn Sandpassage", "Am Sande 8, 21335 Lüneburg"],
+  ["35037", "REWE", "REWE EinsA", "Erlenring 9, 35037 Marburg"],
+  ["45470", "REWE", "REWE Scholand", "Essener Str. 50, 45470 Mülheim an der Ruhr"],
+  ["23730", "REWE", "REWE Haase", "Sierksdorfer Str. 8, 23730 Neustadt in Holstein"],
+  ["48529", "REWE", "REWE Döring", "Friedrich-Ebert-Str. 2, 48529 Nordhorn"],
+  ["48527", "REWE", "REWE Döring", "Neuenhauser Str. 124, 48527 Nordhorn"],
+  ["53757", "REWE", "REWE Pfleger", "Schulstr. 5, 53757 Sankt Augustin"],
+  ["97424", "EDEKA", "EDEKA Höchner", "Oskar-von-Miller-Straße 6, 97424 Schweinfurt"],
+  ["59379", "REWE", "REWE Gawdi", "Kreisstr. 92, 59379 Selm"],
+  ["25436", "REWE", "REWE Kim Ide", "Esinger Str. 3, 25436 Tornesch"],
+  ["26384", "REWE", "REWE Familie Schulze", "Mühlenweg 146, 26384 Wilhelmshaven"]
+].map(function (r, i) {
+  return { sid: i, zip: r[0], brand: r[1], name: r[2], street: r[3], key: streetKey(r[3]), email: "", hasNotEgg: true };
+});
+
+/* Eigene Märkte, die du selbst geprüft hast (z.B. mit direkter E-Mail-Adresse).
+   Sie erscheinen, wenn PLZ oder Ort zur Suche passen. Nur echte, geprüfte
+   Einträge! Beispiel:
+   { zip: "12345", brand: "EDEKA", name: "EDEKA Beispiel", street: "Hauptstr. 1, 12345 Musterstadt", email: "markt@beispiel.de" }  */
+var CUSTOM_MARKETS = [];
+
+var REWE_MAIL = "kundenmanagement@rewe.de";   /* steht so im Impressum von rewe.de */
+var EDEKA_CENTRAL = "info@edeka.de";
+
+/* ACHTUNG, UNGEPRÜFT: Die regionalen EDEKA-Adressen stammen aus der Vorversion
+   und ließen sich nicht belegen. Vor dem Bewerben der Kampagne bitte an jede
+   Adresse eine Testmail schicken. Mit false geht alles an info@edeka.de.   */
+var EDEKA_USE_REGIONAL = true;
+var EDEKA_REGIONS = [
+  { mail: "kundenservice.nord@edeka.de",        plz: [[18, 25]] },
+  { mail: "kundenservice.nbst@edeka.de",        plz: [[1, 2], [4, 4], [7, 9], [90, 99]] },
+  { mail: "kundenservice@minden.edeka.de",      plz: [[3, 3], [5, 6], [10, 17], [26, 33], [38, 39]] },
+  { mail: "kundenservice@edeka-hessenring.de",  plz: [[34, 37]] },
+  { mail: "kundenservice.nordwest@edeka.de",    plz: [[40, 59]] },
+  { mail: "kundenservice@edeka-suedwest.de",    plz: [[60, 79]] },
+  { mail: "kundenservice.suedbayern@edeka.de",  plz: [[80, 89]] }
+];
+
+var CAMPAIGNS = {
+
+  /* ------------------------------------------------------------------ */
+  "not-egg": {
+    mode: "local",
+    short: "🍳 Not Egg",
+    title: "Wünsch dir Not Egg! 🍳",
+    description: "Not Egg ist ein veganes Spiegelei aus der Tiefkühltruhe. Such deinen REWE oder EDEKA und schreib ihm in einer Minute, dass du es dort kaufen möchtest.",
+    topicLabel: "Was passt zu dir?",
+    subjects: [
+      "Sortimentswunsch für {{market_name}}: Not Egg (veganes Spiegelei, tiefgekühlt)",
+      "Kundenwunsch für {{market_name}}, {{market_street}}: Not Egg",
+      "Können Sie Not Egg ins Sortiment aufnehmen? ({{market_name}})",
+      "Anfrage zum Tiefkühlsortiment bei {{market_name}} ({{market_street}})"
+    ],
+    blocks: {
+      intro: [
+        "Guten Tag,\n\nich kaufe regelmäßig bei {{market_name}} ({{market_street}}) ein und habe ein Anliegen zum Tiefkühlsortiment.",
+        "Hallo liebes {{brand}}-Team,\n\nich gehe fast jede Woche bei {{market_name}} ({{market_street}}) einkaufen. Heute schreibe ich wegen einer Sache aus der Tiefkühlabteilung.",
+        "Hallo,\n\nes geht um den Markt {{market_name}}, {{market_street}}. Dort mache ich die meisten meiner Einkäufe.",
+        "Guten Tag,\n\neine kurze Frage zu {{market_name}} ({{market_street}}), wo ich regelmäßig einkaufe.",
+        "Hallo zusammen,\n\n{{market_name}} ({{market_street}}) ist der Markt, in dem ich normalerweise einkaufe. Deshalb wende ich mich mit meiner Frage an Sie."
+      ],
+      impact: [
+        "Vegane Alternativen zum Ei gibt es im Tiefkühlregal bisher kaum. Das wäre also wirklich etwas Neues.",
+        "Bestellen lässt es sich direkt beim Vertrieb, der Vonher GmbH in Hamburg (info@vonher.de).",
+        "Soweit ich weiß, führen es schon einige REWE- und EDEKA-Märkte. Eine Liste steht auf not-egg.de/bezugsquellen.",
+        "Da es Tiefkühlware ist, hält es sich lange. Viel Risiko wäre ein Versuch also nicht.",
+        "Den Kontakt zum Vertrieb finden Sie auf not-egg.de. Ich würde es auf jeden Fall kaufen."
+      ],
+      outro: [
+        "Über eine kurze Antwort würde ich mich freuen.\n\nViele Grüße\n{{user_name}}",
+        "Falls diese Mail nicht an der richtigen Stelle gelandet ist, leiten Sie sie bitte an die Marktleitung weiter. Danke!\n\nFreundliche Grüße\n{{user_name}}",
+        "Danke, dass Sie sich das ansehen.\n\nViele Grüße\n{{user_name}}",
+        "Geben Sie mir gern Bescheid, ob das klappt.\n\nBeste Grüße\n{{user_name}}",
+        "Vielen Dank im Voraus und viele Grüße\n{{user_name}}"
+      ]
+    },
+    topics: [
+      {
+        id: "neutral",
+        label: "📄 Ich möchte es einfach dort kaufen können",
+        middleVariants: [
+          "Ich würde dort gern Not Egg kaufen, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de). Bisher habe ich es im Markt nicht gefunden. Könnten Sie es ins Sortiment aufnehmen?",
+          "Gibt es eine Möglichkeit, dort Not Egg ins Tiefkühlsortiment aufzunehmen? Das ist ein pflanzliches Spiegelei, das man gefroren kauft und nur noch kurz in der Pfanne brät (not-egg.de).",
+          "Mir fehlt im Tiefkühlregal ein Produkt, nämlich Not Egg, ein veganes Spiegelei (not-egg.de). Ich würde mich freuen, wenn Sie es bestellen könnten.",
+          "Ich habe im Markt nach Not Egg gesucht, einem pflanzlichen Spiegelei, das tiefgekühlt verkauft wird (not-egg.de), es aber nicht gefunden. Lässt sich das für den Markt bestellen?"
+        ]
       },
-
-      "veggieworld": {
-        mode: "direct",
-        title: "Feedback an die VeggieWorld",
-        description: "Sende den Veranstaltern (Wellfairs GmbH) ein kurzes Feedback zum Bühnenprogramm.",
-        recipient: "info@veggieworld.de",
-        cc: "info@wellfairs.de",
-        topicLabel: "Was soll in die E-Mail?",
-        topics: [
-          {
-            id: "ethics",
-            label: "🐾 Widerspruch zu Tierrechten & veganen Werten",
-            middleVariants: [
-              "Konkret geht es um einen Vortrag im Bühnenprogramm, dessen Aussagen den ethischen Grundwerten des Veganismus und dem Tierrechtsgedanken direkt widersprochen haben.",
-              "Ein Beitrag auf Ihrer Bühne hat Positionen vertreten, die mit einer tierleidfreien, konsequent veganen Lebensweise schlichtweg nicht vereinbar sind.",
-              "Auf einer Messe, die das Wort 'Veggie' und den veganen Lebensstil im Namen trägt, darf die Bühne nicht für Inhalte genutzt werden, die den ethischen Kern des Veganismus untergraben.",
-              "Der besagte Vortrag hat bei mir und vielen umstehenden Besuchenden für Fassungslosigkeit gesorgt, da dort Werte relativiert wurden, für die die vegane Bewegung seit Jahrzehnten einsteht."
-            ]
-          },
-          {
-            id: "curation",
-            label: "🔍 Fehlende Prüfung der Speaker vorab",
-            middleVariants: [
-              "Als Besucherin bzw. Besucher erwarte ich von der Messeorganisation, dass Speaker und deren Kernthesen vorab sorgfältig geprüft werden, damit das Bühnenprogramm zur Ausrichtung der Messe passt.",
-              "Es wirkt leider sehr befremdlich, wenn im offiziellen Rahmenprogramm der VeggieWorld Vortragende sprechen, deren Inhalte offenbar vorab nicht auf ihre Vereinbarkeit mit veganen Werten geprüft wurden.",
-              "Gerade weil die VeggieWorld für viele Neulinge ein wichtiges Aushängeschild ist, trägt das Organisationsteam eine hohe Verantwortung bei der Auswahl und Kuration der Bühnenbeiträge.",
-              "Dass ein solcher Vortrag ungefiltert Teil des offiziellen Programms werden konnte, zeigt leider eine deutliche Lücke bei der inhaltlichen Auswahl der Rednerinnen und Redner."
-            ]
-          },
-          {
-            id: "credibility",
-            label: "🤝 Schaden für Aussteller & Glaubwürdigkeit",
-            middleVariants: [
-              "Zahlreiche vegane Aussteller, Vereine und Projekte stecken viel Herzblut in diese Messe. Ein solcher Bühnenbeitrag fällt genau diesen engagierten Menschen in den Rücken und schadet der Glaubwürdigkeit.",
-              "In den Gesprächen an den Ständen war deutlich zu spüren, wie sehr dieser Vortrag sowohl Gäste als auch Ausstellende irritiert und verärgert hat.",
-              "Wenn die VeggieWorld auch in Zukunft als authentischer Treffpunkt der veganen Community wahrgenommen werden möchte, dürfen solche Fehlgriffe im Programm nicht passieren.",
-              "Die Stärke der VeggieWorld war immer das Vertrauen der Community. Beiträge, die dem veganen Grundgedanken zuwiderlaufen, setzen genau dieses Vertrauen unnötig aufs Spiel."
-            ]
-          }
-        ],
+      {
+        id: "social",
+        label: "📱 Ich habe es online gesehen",
+        middleVariants: [
+          "Ich habe online Not Egg gesehen, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de), und würde es gern probieren. Im Markt habe ich es leider nicht gefunden. Können Sie es bestellen?",
+          "Im Netz bin ich auf Not Egg gestoßen, ein pflanzliches Spiegelei, das es tiefgekühlt gibt (not-egg.de). Einen Onlineshop hat der Hersteller nicht, man bekommt es nur im Laden. Deshalb meine Frage, ob Sie es ins Sortiment nehmen könnten.",
+          "In letzter Zeit sehe ich online öfter Not Egg, ein veganes Tiefkühl-Spiegelei (not-egg.de). Ich würde es gern selbst ausprobieren, am liebsten gleich beim normalen Einkauf. Wäre es möglich, das Produkt aufzunehmen?",
+          "Ich habe von Not Egg gelesen, einem veganen Spiegelei aus der Tiefkühlung (not-egg.de), und bin neugierig geworden. Leider führt der Markt es bisher nicht. Könnten Sie das ändern?"
+        ]
+      },
+      {
+        id: "distance",
+        label: "🚗 Ich fahre dafür bisher extra in einen anderen Markt",
+        middleVariants: [
+          "Ich kaufe regelmäßig Not Egg, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Dafür muss ich im Moment extra zu einem anderen Markt fahren, der ein gutes Stück weiter weg ist. Könnten Sie es auch in diesem Markt ins Sortiment nehmen?",
+          "Für Not Egg, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de), fahre ich zurzeit jedes Mal in einen anderen Laden. Mit Tiefkühlware ist der lange Heimweg nicht ideal. Am liebsten würde ich es einfach beim normalen Einkauf mitnehmen. Lässt sich das einrichten?",
+          "Es gibt ein Produkt, für das ich bisher einen Umweg fahre, und zwar Not Egg, ein veganes Spiegelei, das tiefgekühlt verkauft wird (not-egg.de). Wenn es das im Markt gäbe, könnte ich mir die Extrafahrt sparen. Können Sie es bestellen?",
+          "Not Egg, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de), bekomme ich bisher nur in einem Markt, der für mich ziemlich weit weg ist. Ich würde es viel lieber dort kaufen, wo ich sowieso einkaufe. Wäre eine Aufnahme ins Sortiment möglich?"
+        ]
+      },
+      {
+        id: "taste",
+        label: "🍳 Ich habe es auf der VeggieWorld probiert",
+        middleVariants: [
+          "Auf der VeggieWorld habe ich Not Egg probiert, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Es hat mir richtig gut geschmeckt und ich würde es gern öfter essen. Im Markt habe ich es aber nicht gefunden. Könnten Sie es aufnehmen?",
+          "Ich war auf der VeggieWorld und habe dort Not Egg gegessen, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de). Seitdem suche ich es im Supermarkt. Können Sie es bestellen?",
+          "Ich habe Not Egg auf der Messe VeggieWorld kennengelernt. Das ist ein veganes Spiegelei, das man gefroren kauft und in ein paar Minuten in der Pfanne fertig brät (not-egg.de). Geschmacklich hat es mich überzeugt. Gibt es eine Chance, dass der Markt es ins Sortiment nimmt?",
+          "Seit ich Not Egg auf der VeggieWorld probiert habe, hätte ich es gern öfter zu Hause. Es ist ein veganes Spiegelei aus der Tiefkühlung (not-egg.de). Leider führt der Markt es noch nicht. Wäre es möglich, das zu ändern?"
+        ]
+      },
+      {
+        /* Erscheint nur, wenn der gewählte Markt in NOT_EGG_STOCKISTS steht.
+           Hat eigene Betreffs, impact- und outro-Texte, weil die Wunsch-Texte
+           bei einer Vorratsfrage nicht passen würden.                        */
+        id: "restock",
+        onlyStocked: true,
+        label: "🔄 Ich habe es im Markt nicht gefunden",
         subjects: [
-          "Kritisches Besucher-Feedback zum Bühnenprogramm auf der VeggieWorld",
-          "Rückmeldung zur VeggieWorld: Vortrag widerspricht veganen Grundwerten",
-          "Bitte um sorgfältigere Kuration der Speaker bei kommenden VeggieWorld-Messen",
-          "Deutliche Kritik an einem Vortragsbeitrag auf der vergangenen VeggieWorld"
+          "Ist Not Egg bei {{market_name}} vorrätig?",
+          "Frage zu Not Egg bei {{market_name}} ({{market_street}})",
+          "Not Egg im Tiefkühlregal nicht gefunden ({{market_name}})"
         ],
-        blocks: {
-          intro: [
-            "Liebes Team der VeggieWorld und der Wellfairs GmbH,\n\nich habe die Messe besucht, um spannende vegane Projekte und Produkte kennenzulernen, muss mich heute aber mit deutlicher Kritik an Sie wenden.",
-            "Guten Tag,\n\neigentlich schätze ich die VeggieWorld als Plattform für die pflanzliche Lebensweise sehr. Ein Programmpunkt auf der Bühne hat mich jedoch massiv enttäuscht.",
-            "Hallo liebes Organisationsteam der VeggieWorld,\n\nals Messeteilnehmerin bzw. Messeteilnehmer ist es mir ein wichtiges Anliegen, Ihnen eine ehrliche Rückmeldung zum vergangenen Bühnenprogramm zu geben.",
-            "Sehr geehrtes Team der Wellfairs GmbH,\n\nich schreibe Ihnen heute, weil ein Vortrag auf der VeggieWorld bei mir und vielen anderen Gästen vor Ort für großes Unverständnis gesorgt hat."
-          ],
-          impact: [
-            "Viele Besuchende vor Ort haben sich im Anschluss darüber ausgetauscht und waren sich einig, dass so etwas auf dieser Bühne keinen Platz haben sollte.",
-            "Eine vegane Messe sollte ein Ort der Inspiration und Aufklärung im Sinne der Tiere sein – und nicht für Verwirrung oder Verwässerung unserer Werte sorgen.",
-            "Konstruktive Vielfalt ist wichtig, doch die Grundfeste des Veganismus sollten auf einer VeggieWorld nicht zur Disposition gestellt werden.",
-            "Mir liegt viel daran, dass die Messe ein positiver Ort für die Bewegung bleibt – genau deshalb darf ein solcher Programmpunkt nicht unkommentiert bleiben."
-          ],
-          outro: [
-            "Ich bitte Sie dringend, bei kommenden Veranstaltungen klare inhaltliche Kriterien für das Bühnenprogramm anzulegen. Über eine kurze Stellungnahme würde ich mich freuen.\n\nMit freundlichen Grüßen\n{{user_name}}",
-            "Bitte stellen Sie künftig sicher, dass die Auswahl der Vortragenden die Werte der veganen Community respektiert. Vielen Dank für die Kenntnisnahme.\n\nViele Grüße\n{{user_name}}",
-            "Ich hoffe sehr, dass Sie dieses Feedback ernst nehmen und bei der Planung der nächsten VeggieWorld entsprechend gegensteuern.\n\nBeste Grüße\n{{user_name}}",
-            "Lassen Sie mich gerne wissen, wie Sie künftig verhindern möchten, dass sich ein solcher Vorfall im Bühnenprogramm wiederholt.\n\nFreundliche Grüße\n{{user_name}}"
-          ]
-        }
+        middleVariants: [
+          "Laut not-egg.de/bezugsquellen führt der Markt Not Egg, das vegane Spiegelei aus der Tiefkühltruhe. Bei meinem letzten Einkauf habe ich es nicht gefunden. Ist es zurzeit vorrätig?",
+          "Auf der Herstellerseite ist der Markt als Bezugsquelle für Not Egg aufgeführt (veganes Tiefkühl-Spiegelei, not-egg.de). Ich habe es im Tiefkühlbereich aber nicht entdeckt. Können Sie mir sagen, in welcher Truhe es liegt?",
+          "Ich habe gesehen, dass es dort Not Egg geben soll, das vegane Spiegelei aus der Tiefkühlung (not-egg.de/bezugsquellen). Beim letzten Mal war das Fach leer oder ich habe es übersehen. Ist es ausverkauft, und wenn ja, wann kommt neue Ware?",
+          "Schön, dass der Markt Not Egg im Sortiment hat, das vegane Tiefkühl-Spiegelei (not-egg.de). Zuletzt konnte ich es allerdings nicht finden. Wissen Sie, ob es nachbestellt ist?"
+        ],
+        impact: [
+          "Ich würde es gern beim nächsten Einkauf mitnehmen.",
+          "Ich möchte es regelmäßig kaufen, deshalb wäre es gut zu wissen, ob es dauerhaft im Sortiment bleibt.",
+          "Falls es nur gerade aus ist, komme ich einfach nach der nächsten Lieferung wieder.",
+          "Wenn es aus dem Sortiment genommen wurde, fände ich das schade. Ich würde es weiterhin kaufen."
+        ],
+        outro: [
+          "Über eine kurze Antwort würde ich mich freuen.\n\nViele Grüße\n{{user_name}}",
+          "Falls diese Mail nicht an der richtigen Stelle gelandet ist, leiten Sie sie bitte an die Marktleitung weiter. Danke!\n\nFreundliche Grüße\n{{user_name}}",
+          "Danke für die Auskunft!\n\nViele Grüße\n{{user_name}}",
+          "Vielen Dank im Voraus und viele Grüße\n{{user_name}}"
+        ]
       }
+    ]
+  },
+
+  /* ------------------------------------------------------------------ */
+  "veggieworld": {
+    mode: "direct",
+    short: "🎤 VeggieWorld",
+    title: "Feedback an die VeggieWorld",
+    description: "Schreib den Organisatoren der Messe (Wellfairs GmbH), was du von dem Vortrag im Bühnenprogramm hältst.",
+    /* info@wellfairs.de steht auf veggieworld.eco.
+       UNGEPRÜFT: info@veggieworld.de (aus der Vorversion). Zum Entfernen cc auf "" setzen. */
+    recipient: "info@wellfairs.de",
+    cc: "info@veggieworld.de",
+    topicLabel: "Was stört dich am meisten?",
+    subjects: [
+      "Rückmeldung zu einem Vortrag auf der VeggieWorld",
+      "Kritik am Bühnenprogramm der VeggieWorld",
+      "VeggieWorld: Vortrag passt nicht zu einer veganen Messe",
+      "Feedback nach meinem Besuch der VeggieWorld"
+    ],
+    blocks: {
+      intro: [
+        "Guten Tag,\n\nich war auf der VeggieWorld und möchte Ihnen eine Rückmeldung zu einem der Vorträge geben.",
+        "Hallo liebes VeggieWorld-Team,\n\nich komme gern auf Ihre Messe. Diesmal bin ich aber mit einem unguten Gefühl nach Hause gegangen, und zwar wegen eines Vortrags.",
+        "Sehr geehrte Damen und Herren,\n\nich schreibe Ihnen wegen eines Vortrags auf der VeggieWorld, der mich ziemlich geärgert hat.",
+        "Hallo,\n\nnach meinem Besuch der VeggieWorld möchte ich Ihnen etwas zurückmelden, das mir seitdem nicht aus dem Kopf geht. Es geht um einen der Vorträge auf der Bühne.",
+        "Guten Tag,\n\ndie VeggieWorld ist für mich eigentlich ein fester Termin. Umso mehr hat mich diesmal ein Vortrag auf der Bühne enttäuscht."
+      ],
+      impact: [
+        "Ich fände es richtig, wenn Sie dazu öffentlich Stellung nehmen.",
+        "Mir ist die Messe wichtig, sonst würde ich Ihnen nicht schreiben.",
+        "Unterschiedliche Meinungen gehören auf eine Messe. Die Frage, ob Tiere ausgebeutet werden dürfen, sollte auf einer veganen Messe aber nicht zur Debatte stehen.",
+        "Ich hoffe, dass Sie solche Rückmeldungen ernst nehmen und nicht als Einzelmeinung abtun."
+      ],
+      outro: [
+        "Bitte achten Sie bei der nächsten VeggieWorld darauf, wer bei Ihnen auf der Bühne steht. Über eine Antwort würde ich mich freuen.\n\nMit freundlichen Grüßen\n{{user_name}}",
+        "Wie wollen Sie verhindern, dass so etwas noch einmal vorkommt? Auf Ihre Antwort bin ich gespannt.\n\nViele Grüße\n{{user_name}}",
+        "Ich würde gern wissen, wie Sie den Vortrag im Nachhinein bewerten.\n\nFreundliche Grüße\n{{user_name}}",
+        "Danke, dass Sie sich die Zeit für diese Rückmeldung nehmen.\n\nMit freundlichen Grüßen\n{{user_name}}"
+      ]
+    },
+    topics: [
+      {
+        id: "ethics",
+        label: "🐾 Der Vortrag widersprach veganen Werten",
+        middleVariants: [
+          "In dem Vortrag wurden Positionen vertreten, die mit Veganismus nichts zu tun haben. Im Gegenteil, sie widersprechen dem Gedanken, dass Tiere nicht für uns da sind.",
+          "Was dort gesagt wurde, passt für mich nicht zu einer Messe, die sich an vegan lebende Menschen richtet. Für mich geht es beim Veganismus um die Tiere, und genau das wurde dort infrage gestellt.",
+          "Dort wurden Dinge relativiert, die für mich zum Kern des Veganismus gehören. Auf einer veganen Messe hätte ich damit nicht gerechnet.",
+          "Viele Menschen leben vegan, weil sie Tierleid nicht mittragen wollen. Der Vortrag hat genau diese Haltung kleingeredet, und das auf der Bühne einer Messe, die mit dem veganen Lebensstil wirbt."
+        ]
+      },
+      {
+        id: "curation",
+        label: "🔍 Die Vortragenden wurden offenbar nicht geprüft",
+        middleVariants: [
+          "Mich würde interessieren, wie die Vortragenden ausgewählt werden. Bei diesem Beitrag hatte ich nicht den Eindruck, dass jemand vorher geprüft hat, ob die Inhalte zu einer veganen Messe passen.",
+          "Ich gehe davon aus, dass Sie das Programm vorab sichten. Umso weniger verstehe ich, wie dieser Vortrag es auf die Bühne geschafft hat, denn seine Kernaussagen stehen im Widerspruch zu veganen Werten.",
+          "Zur VeggieWorld kommen viele Leute, die sich zum ersten Mal mit dem Thema beschäftigen. Was auf der Bühne gesagt wird, nehmen sie als Position der Messe wahr. Deshalb finde ich es wichtig, dass Sie die Inhalte der Vorträge vorher prüfen, und das ist hier offenbar nicht passiert.",
+          "Ein Vortrag mit solchen Inhalten hätte aus meiner Sicht bei der Programmplanung auffallen müssen. Dass er trotzdem im offiziellen Programm stand, wirft für mich die Frage auf, nach welchen Kriterien Sie auswählen."
+        ]
+      },
+      {
+        id: "credibility",
+        label: "🤝 Das schadet Ausstellern und der Messe",
+        middleVariants: [
+          "Auf der Messe stehen viele Aussteller und Vereine, die sich seit Jahren für Tiere einsetzen. Ein solcher Vortrag auf der Bühne fällt ihnen in den Rücken.",
+          "Die VeggieWorld lebt davon, dass die vegane Community ihr vertraut. Mit Beiträgen wie diesem setzen Sie dieses Vertrauen aufs Spiel.",
+          "Ich empfehle die Messe sonst gern weiter. Nach diesem Vortrag fällt mir das schwerer, weil ich nicht mehr sicher bin, wofür die VeggieWorld inhaltlich steht.",
+          "Für viele ist die VeggieWorld das Gesicht der veganen Bewegung nach außen. Wenn dort Inhalte laufen, die veganen Grundsätzen widersprechen, schadet das der Messe und auch den Ausstellern, die dort aus Überzeugung stehen."
+        ]
+      }
+    ]
+  }
+};
+
+/* =====================================================================
+   HILFSFUNKTIONEN
+   ===================================================================== */
+
+function $(id) { return document.getElementById(id); }
+
+/* Macht Schreibweisen vergleichbar: "Märkische Straße 82 a" und
+   "Märkische Str. 82a" werden beide zu "märkischestr82a".           */
+function norm(s) {
+  return (s || "").toLowerCase()
+    .replace(/ß/g, "ss")
+    .replace(/strasse/g, "str")
+    .replace(/str\./g, "str")
+    .replace(/[^a-z0-9äöü]/g, "");
+}
+
+/* "Märkische Str. 82a, 44141 Dortmund" -> "märkischestr82" */
+function streetKey(address) {
+  var first = (address || "").split(",")[0];
+  var m = first.match(/^(.*?)\s*(\d+)/);
+  return m ? norm(m[1]) + m[2] : norm(first);
+}
+
+/* true, wenn key in hay vorkommt und danach keine weitere Ziffer folgt
+   (damit "schulstr5" nicht auch "schulstr50" trifft).                */
+function containsKey(hay, key) {
+  var i = hay.indexOf(key);
+  while (i !== -1) {
+    var next = hay.charAt(i + key.length);
+    if (!/[0-9]/.test(next)) return true;
+    i = hay.indexOf(key, i + 1);
+  }
+  return false;
+}
+
+function findStockist(brand, zip, streetWithNumber) {
+  var hay = norm(streetWithNumber);
+  if (!hay) return null;
+  for (var i = 0; i < NOT_EGG_STOCKISTS.length; i++) {
+    var s = NOT_EGG_STOCKISTS[i];
+    if (s.brand !== brand) continue;
+    if (zip && s.zip !== zip) continue;
+    if (containsKey(hay, s.key)) return s;
+  }
+  return null;
+}
+
+function getEdekaEmail(zip) {
+  if (!EDEKA_USE_REGIONAL) return EDEKA_CENTRAL;
+  var p = parseInt((zip || "").substring(0, 2), 10);
+  if (isNaN(p)) return EDEKA_CENTRAL;
+  for (var i = 0; i < EDEKA_REGIONS.length; i++) {
+    var ranges = EDEKA_REGIONS[i].plz;
+    for (var j = 0; j < ranges.length; j++) {
+      if (p >= ranges[j][0] && p <= ranges[j][1]) return EDEKA_REGIONS[i].mail;
+    }
+  }
+  return EDEKA_CENTRAL;
+}
+
+function recipientsFor(market) {
+  if (!market) return { to: "", cc: "" };
+  var corp = market.brand === "EDEKA" ? getEdekaEmail(market.zip) : REWE_MAIL;
+  if (market.email) return { to: market.email, cc: corp };
+  return { to: corp, cc: (market.brand === "EDEKA" && corp !== EDEKA_CENTRAL) ? EDEKA_CENTRAL : "" };
+}
+
+function cleanEmail(raw) {
+  var first = (raw || "").split(/[;,\s]+/)[0];
+  return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(first) ? first : "";
+}
+
+function distanceKm(lat1, lon1, lat2, lon2) {
+  var rad = Math.PI / 180;
+  var dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function matchesQuery(m, query) {
+  if (/^\d{2,5}$/.test(query)) return m.zip.indexOf(query) === 0;
+  if (query.length < 3) return false;
+  var q = norm(query);
+  var cityPart = m.street.split(",").slice(1).join(",");
+  return norm(cityPart).indexOf(q) !== -1 || norm(m.name).indexOf(q) !== -1;
+}
+
+function fill(text, vars) {
+  return text.replace(/\{\{(\w+)\}\}/g, function (all, key) {
+    return Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : all;
+  });
+}
+
+function pick(arr, n) { return arr[n % arr.length]; }
+
+function store(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
+function recall(key) { try { return localStorage.getItem(key) || ""; } catch (e) { return ""; } }
+
+async function fetchJson(url, options, timeoutMs) {
+  var controller = new AbortController();
+  var timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+  try {
+    var res = await fetch(url, Object.assign({}, options || {}, { signal: controller.signal }));
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* =====================================================================
+   ZUSTAND
+   ===================================================================== */
+
+var PH_NAME = "[Dein Name]";
+var PH_MARKET = "[dein Markt]";
+var PH_STREET = "[Adresse des Marktes]";
+
+var camp = null;
+var topicId = "";
+var markets = [];
+var manualMode = false;
+var searchRun = 0;
+var roll = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0 };
+
+/* =====================================================================
+   KAMPAGNE UND THEMEN
+   ===================================================================== */
+
+function initApp() {
+  var urlCamp = new URLSearchParams(window.location.search).get("c");
+  var hasUrlCamp = !!(urlCamp && CAMPAIGNS[urlCamp]);
+  var bar = $("campaign-switcher");
+  var box = $("switcher-buttons");
+
+  if (hasUrlCamp) {
+    bar.classList.add("hidden");
+  } else {
+    Object.keys(CAMPAIGNS).forEach(function (key) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "switch-btn-" + key;
+      btn.textContent = CAMPAIGNS[key].short || key;
+      btn.addEventListener("click", function () { selectCampaign(key); });
+      box.appendChild(btn);
+    });
+  }
+
+  $("search-btn").addEventListener("click", searchMarkets);
+  $("zip-input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); searchMarkets(); }
+  });
+  $("market-select").addEventListener("change", onMarketChange);
+  $("manual-toggle-btn").addEventListener("click", function () { setManualMode(!manualMode); });
+  ["manual-brand", "manual-name", "manual-street"].forEach(function (id) {
+    $(id).addEventListener("input", onMarketChange);
+    $(id).addEventListener("change", onMarketChange);
+  });
+  $("user-name").addEventListener("input", function () {
+    store("vmom-name", $("user-name").value);
+    renderEmail();
+  });
+  $("roll-btn").addEventListener("click", rollNewCombination);
+  $("preview-subject").addEventListener("input", updateLinks);
+  $("preview-body").addEventListener("input", updateLinks);
+  $("mailto-btn").addEventListener("click", guardSend);
+  $("gmail-btn").addEventListener("click", guardSend);
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () { copyPart(btn.getAttribute("data-copy"), btn); });
+  });
+
+  $("user-name").value = recall("vmom-name");
+  selectCampaign(hasUrlCamp ? urlCamp : Object.keys(CAMPAIGNS)[0]);
+}
+
+function selectCampaign(key) {
+  camp = CAMPAIGNS[key];
+  topicId = "";
+  markets = [];
+  searchRun++;
+
+  Object.keys(CAMPAIGNS).forEach(function (k) {
+    var b = $("switch-btn-" + k);
+    if (b) {
+      b.className = k === key
+        ? "px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-slate-950 transition"
+        : "px-2.5 py-1 rounded-md font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
+    }
+  });
+
+  $("camp-title").textContent = camp.title;
+  $("camp-desc").textContent = camp.description;
+  $("topic-label").textContent = camp.topicLabel || "Was soll in die E-Mail?";
+
+  var isLocal = camp.mode === "local";
+  $("local-search-section").classList.toggle("hidden", !isLocal);
+  $("search-status").classList.add("hidden");
+  hideProgress();
+  $("search-btn").disabled = false;
+  $("search-btn").textContent = "Suchen";
+  if (isLocal) populateMarketDropdown();
+  setManualMode(false, true);
+
+  roll = randomRoll();
+  onMarketChange();
+}
+
+function currentMarket() {
+  if (!camp || camp.mode !== "local") return null;
+  if (manualMode) {
+    var brand = $("manual-brand").value;
+    var street = $("manual-street").value.trim();
+    var zipMatch = street.match(/\b(\d{5})\b/);
+    return {
+      brand: brand,
+      name: $("manual-name").value.trim() || brand,
+      street: street,
+      zip: zipMatch ? zipMatch[1] : "",
+      email: "",
+      hasNotEgg: !!findStockist(brand, zipMatch ? zipMatch[1] : "", street.split(",")[0])
     };
+  }
+  if (!markets.length) return null;
+  return markets[parseInt($("market-select").value, 10)] || markets[0];
+}
 
-    let currentCampKey = "not-egg";
-    let currentCamp = null;
-    let currentTopicIndex = 0;
-    let activeMarkets = [];
-    let isManualMode = false;
-    let selectedIndices = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0 };
+/* Die Vorratsfrage gibt es nur für Märkte, die Not Egg laut Liste führen.
+   Für diese Märkte ergibt umgekehrt ein Sortimentswunsch keinen Sinn.   */
+function visibleTopics() {
+  var m = currentMarket();
+  var stocked = !!(m && m.hasNotEgg);
+  var list = camp.topics.filter(function (t) { return !!t.onlyStocked === stocked; });
+  return list.length ? list : camp.topics;
+}
 
-    function initApp() {
-      var params = new URLSearchParams(window.location.search);
-      var urlCamp = params.get("c");
-      
-      var switcherBar = document.getElementById("campaign-switcher");
-      var switcherContainer = document.getElementById("switcher-buttons");
-      switcherContainer.innerHTML = "";
-      
-      if (urlCamp && CAMPAIGNS[urlCamp]) {
-        switcherBar.classList.add("hidden");
-      } else {
-        Object.keys(CAMPAIGNS).forEach(function(key) {
-          var btn = document.createElement("button");
-          btn.id = "switch-btn-" + key;
-          btn.className = "px-2.5 py-1 rounded-md font-semibold transition";
-          btn.innerText = key === "not-egg" ? "🍳 Not Egg" : (key === "veggieworld" ? "🎤 VeggieWorld" : key);
-          btn.onclick = function() { selectCampaign(key); };
-          switcherContainer.appendChild(btn);
-        });
-      }
+function currentTopic() {
+  var list = visibleTopics();
+  for (var i = 0; i < list.length; i++) if (list[i].id === topicId) return list[i];
+  topicId = list[0].id;
+  return list[0];
+}
 
-      if (urlCamp && CAMPAIGNS[urlCamp]) {
-        selectCampaign(urlCamp);
-      } else {
-        selectCampaign("not-egg");
-      }
-    }
-
-    function selectCampaign(key) {
-      currentCampKey = key;
-      currentCamp = CAMPAIGNS[key];
-      currentTopicIndex = 0;
-      isManualMode = false;
-      document.getElementById("manual-market-box").classList.add("hidden");
-
-      Object.keys(CAMPAIGNS).forEach(function(k) {
-        var b = document.getElementById("switch-btn-" + k);
-        if (b) {
-          b.className = k === key 
-            ? "px-2.5 py-1 rounded-md font-bold bg-emerald-500 text-slate-950 transition" 
-            : "px-2.5 py-1 rounded-md font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
-        }
-      });
-
-      document.getElementById("camp-title").innerText = currentCamp.title;
-      document.getElementById("camp-desc").innerText = currentCamp.description;
-      document.getElementById("topic-label").innerText = currentCamp.topicLabel || "Was soll in die E-Mail?";
-
-      var localSection = document.getElementById("local-search-section");
-      if (currentCamp.mode === "local") {
-        localSection.classList.remove("hidden");
-        activeMarkets = CUSTOM_MARKETS.slice();
-        populateMarketDropdown(activeMarkets);
-      } else {
-        localSection.classList.add("hidden");
-      }
-
+function renderTopicButtons() {
+  var active = currentTopic();
+  var box = $("topic-buttons");
+  box.innerHTML = "";
+  visibleTopics().forEach(function (t) {
+    var selected = t.id === active.id;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    btn.className = selected
+      ? "text-left px-3.5 py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-bold text-sm transition flex items-center justify-between gap-2"
+      : "text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition flex items-center justify-between gap-2";
+    var label = document.createElement("span");
+    label.textContent = t.label;
+    var mark = document.createElement("span");
+    mark.className = "text-xs shrink-0";
+    mark.textContent = selected ? "✅" : "⚪";
+    btn.appendChild(label);
+    btn.appendChild(mark);
+    btn.addEventListener("click", function () {
+      topicId = t.id;
+      roll.middle = Math.floor(Math.random() * 1000);
       renderTopicButtons();
-      rollNewCombination();
-    }
-
-    function toggleManualMarket() {
-      var box = document.getElementById("manual-market-box");
-      var dropWrap = document.getElementById("dropdown-wrapper");
-      var btn = document.getElementById("manual-toggle-btn");
-      isManualMode = !isManualMode;
-      if (isManualMode) {
-        box.classList.remove("hidden");
-        dropWrap.classList.add("hidden");
-        btn.innerText = "Zurück zur automatischen Markt-Liste";
-      } else {
-        box.classList.add("hidden");
-        dropWrap.classList.remove("hidden");
-        btn.innerText = "Dein Markt fehlt in der Liste? Hier manuell eingeben";
-      }
       renderEmail();
+    });
+    box.appendChild(btn);
+  });
+}
+
+function randomRoll() {
+  var r = function () { return Math.floor(Math.random() * 1000); };
+  return { subject: r(), intro: r(), middle: r(), impact: r(), outro: r() };
+}
+
+function rollNewCombination() {
+  var before = $("preview-body").value;
+  for (var i = 0; i < 5; i++) {       /* nicht zweimal denselben Text würfeln */
+    roll = randomRoll();
+    renderEmail();
+    if ($("preview-body").value !== before) break;
+  }
+}
+
+/* =====================================================================
+   MARKTAUSWAHL
+   ===================================================================== */
+
+function setManualMode(on, silent) {
+  manualMode = !!on;
+  $("manual-market-box").classList.toggle("hidden", !manualMode);
+  $("dropdown-wrapper").classList.toggle("hidden", manualMode || markets.length === 0);
+  $("manual-toggle-btn").textContent = manualMode
+    ? (markets.length ? "Zurück zur Liste der gefundenen Märkte" : "Manuelle Eingabe schließen")
+    : "Dein Markt fehlt? Hier selbst eintragen";
+  if (!silent) onMarketChange();
+}
+
+function populateMarketDropdown() {
+  var select = $("market-select");
+  select.innerHTML = "";
+  markets.forEach(function (m, idx) {
+    var opt = document.createElement("option");
+    opt.value = String(idx);
+    var dist = typeof m.km === "number" ? " (ca. " + m.km.toFixed(1).replace(".", ",") + " km)" : "";
+    opt.textContent = (m.hasNotEgg ? "✓ hat Not Egg: " : "") + m.name + ", " + m.street + dist;
+    select.appendChild(opt);
+  });
+  $("dropdown-wrapper").classList.toggle("hidden", manualMode || markets.length === 0);
+}
+
+function onMarketChange() {
+  var m = currentMarket();
+  var showCard = !!m && !manualMode;
+  if (showCard) {
+    $("detail-name").textContent = m.name;
+    $("detail-brand").textContent = m.brand;
+    $("detail-address").textContent = "📍 " + m.street;
+    var extra = [];
+    if (m.operator) extra.push("Betreiber: " + m.operator);
+    if (m.hours) extra.push("🕒 " + m.hours);
+    $("detail-extra").textContent = extra.join(" • ");
+    $("detail-extra").classList.toggle("hidden", extra.length === 0);
+  }
+  $("already-listed-banner").classList.toggle("hidden", !(showCard && m.hasNotEgg));
+  renderTopicButtons();
+  renderEmail();
+}
+
+/* =====================================================================
+   MARKTSUCHE (Geokodierung + Overpass)
+   ===================================================================== */
+
+function setProgress(text, percent) {
+  $("progress-container").classList.remove("hidden");
+  $("progress-step-text").textContent = text;
+  $("progress-percent").textContent = percent + "%";
+  $("progress-bar").style.width = percent + "%";
+}
+
+function hideProgress() { $("progress-container").classList.add("hidden"); }
+
+function showStatus(msg, isWarning) {
+  var el = $("search-status");
+  el.className = isWarning
+    ? "text-xs mb-2.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900"
+    : "text-xs mb-2.5 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-medium";
+  el.textContent = msg;
+}
+
+async function geocodePhoton(query) {
+  var url = "https://photon.komoot.io/api/?limit=5&lang=de&q=" + encodeURIComponent(query + " Deutschland");
+  var data = await fetchJson(url, {}, 5000);
+  var list = (data && data.features) || [];
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i].properties || {};
+    if ((p.countrycode || "").toUpperCase() === "DE" && list[i].geometry) {
+      return { lat: list[i].geometry.coordinates[1], lon: list[i].geometry.coordinates[0] };
+    }
+  }
+  return null;
+}
+
+async function geocodeNominatim(query, isZip) {
+  var url = "https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=de&limit=1&accept-language=de&" +
+            (isZip ? "postalcode=" : "q=") + encodeURIComponent(query);
+  var data = await fetchJson(url, {}, 6000);
+  if (data && data.length) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  return null;
+}
+
+/* Bei einer PLZ ist Nominatim genauer, bei Ortsnamen Photon schneller. */
+async function geocode(query) {
+  var isZip = /^\d{5}$/.test(query);
+  var steps = isZip
+    ? [function () { return geocodeNominatim(query, true); }, function () { return geocodePhoton(query); }]
+    : [function () { return geocodePhoton(query); }, function () { return geocodeNominatim(query, false); }];
+  var reached = false;
+  for (var i = 0; i < steps.length; i++) {
+    try {
+      var hit = await steps[i]();
+      reached = true;
+      if (hit && !isNaN(hit.lat) && !isNaN(hit.lon)) return hit;
+    } catch (e) {}
+  }
+  if (!reached) throw new Error("geocoder offline");
+  return null;
+}
+
+async function queryOverpass(lat, lon, radius) {
+  var around = "(around:" + radius + "," + lat + "," + lon + ");";
+  var q = "[out:json][timeout:10];(" +
+          'nwr["shop"="supermarket"]["brand"~"^(rewe|edeka)",i]' + around +
+          'nwr["shop"="supermarket"]["name"~"^(rewe|edeka)",i]' + around +
+          ");out center tags;";
+  var endpoints = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter"
+  ];
+  for (var i = 0; i < endpoints.length; i++) {
+    try {
+      return await fetchJson(endpoints[i], { method: "POST", body: new URLSearchParams({ data: q }) }, 12000);
+    } catch (e) {}
+  }
+  return null;
+}
+
+/* Wandelt einen OSM-Eintrag in einen Markt um. Es werden nur Angaben
+   übernommen, die wirklich in der Karte stehen. Fehlt die Straße, gibt
+   die Funktion null zurück, statt eine Adresse zu raten.              */
+function marketFromOsm(el, origin) {
+  var t = el.tags || {};
+  var street = (t["addr:street"] || "").trim();
+  if (!street) return null;
+  var number = (t["addr:housenumber"] || "").trim();
+  var zip = (t["addr:postcode"] || "").trim();
+  var city = (t["addr:city"] || t["addr:town"] || t["addr:village"] || "").trim();
+  var suburb = (t["addr:suburb"] || t["addr:quarter"] || "").trim();
+
+  var name = (t.name || t.brand || "").trim();
+  var brand = /edeka/i.test(name + " " + (t.brand || "")) ? "EDEKA" : "REWE";
+  if (t.branch && name.indexOf(t.branch) === -1) name += " " + t.branch;
+
+  var streetPart = (street + " " + number).trim();
+  var cityPart = (zip + " " + city).trim();
+  if (suburb && cityPart && cityPart.indexOf(suburb) === -1) cityPart += " (" + suburb + ")";
+
+  var lat = typeof el.lat === "number" ? el.lat : (el.center ? el.center.lat : null);
+  var lon = typeof el.lon === "number" ? el.lon : (el.center ? el.center.lon : null);
+
+  return {
+    brand: brand,
+    name: name || brand,
+    street: cityPart ? streetPart + ", " + cityPart : streetPart,
+    streetOnly: streetPart,
+    zip: zip,
+    operator: (t.operator || "").trim(),
+    hours: (t.opening_hours || "").trim(),
+    email: cleanEmail(t["contact:email"] || t.email),
+    km: (lat !== null && lon !== null) ? distanceKm(origin.lat, origin.lon, lat, lon) : null,
+    hasNotEgg: false
+  };
+}
+
+async function searchMarkets() {
+  var query = $("zip-input").value.trim();
+  if (!query) { $("zip-input").focus(); return; }
+
+  var run = ++searchRun;
+  var stale = function () { return run !== searchRun; };
+  var btn = $("search-btn");
+  btn.disabled = true;
+  btn.textContent = "Sucht...";
+  $("search-status").classList.add("hidden");
+
+  try {
+    setProgress("1/3: Bekannte Bezugsquellen prüfen", 15);
+    var known = NOT_EGG_STOCKISTS.concat(CUSTOM_MARKETS.map(function (m) {
+      var s = findStockist(m.brand, m.zip, (m.street || "").split(",")[0]);
+      return Object.assign({ email: "", hasNotEgg: !!s }, m);
+    })).filter(function (m) { return matchesQuery(m, query); })
+       .map(function (m) { return Object.assign({}, m); });
+
+    setProgress("2/3: Ort bestimmen", 40);
+    var origin = null, mapsDown = false;
+    try { origin = await geocode(query); } catch (e) { mapsDown = true; }
+    if (stale()) return;
+
+    if (!origin && !mapsDown && known.length === 0) {
+      hideProgress();
+      showStatus("„" + query + "“ wurde in Deutschland nicht gefunden. Bitte prüf die Schreibweise.", true);
+      return;
     }
 
-    function renderTopicButtons() {
-      var container = document.getElementById("topic-buttons");
-      container.innerHTML = "";
-      currentCamp.topics.forEach(function(t, idx) {
-        var btn = document.createElement("button");
-        var isSelected = idx === currentTopicIndex;
-        btn.className = isSelected
-          ? "text-left px-3.5 py-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 text-emerald-950 font-bold text-sm transition flex items-center justify-between"
-          : "text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition flex items-center justify-between";
-        btn.innerHTML = "<span>" + t.label + "</span><span class='text-xs ml-2'>" + (isSelected ? "✅" : "⚪") + "</span>";
-        btn.onclick = function() {
-          currentTopicIndex = idx;
-          renderTopicButtons();
-          var middleArr = currentCamp.topics[currentTopicIndex].middleVariants;
-          selectedIndices.middle = Math.floor(Math.random() * middleArr.length);
-          renderEmail();
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    function randomIndex(arr) {
-      return Math.floor(Math.random() * arr.length);
-    }
-
-    function rollNewCombination() {
-      var middleArr = currentCamp.topics[currentTopicIndex].middleVariants;
-      selectedIndices = {
-        subject: randomIndex(currentCamp.subjects),
-        intro: randomIndex(currentCamp.blocks.intro),
-        middle: randomIndex(middleArr),
-        impact: randomIndex(currentCamp.blocks.impact),
-        outro: randomIndex(currentCamp.blocks.outro)
-      };
-      renderEmail();
-    }
-
-    function populateMarketDropdown(list) {
-      var select = document.getElementById("market-select");
-      select.innerHTML = "";
-      list.forEach(function(m, idx) {
-        var opt = document.createElement("option");
-        opt.value = idx;
-        var prefix = m.hasNotEgg ? "🎉 [Hat Not-Egg!] " : "";
-        opt.text = prefix + m.name + " 📍 " + m.street;
-        select.appendChild(opt);
-      });
-      onMarketChange();
-    }
-
-    function onMarketChange() {
-      if (currentCamp && currentCamp.mode === "local" && activeMarkets.length > 0) {
-        var select = document.getElementById("market-select");
-        var m = activeMarkets[select.value] || activeMarkets[0];
-        document.getElementById("detail-name").innerText = m.name;
-        document.getElementById("detail-brand").innerText = m.brand;
-        document.getElementById("detail-address").innerText = "📍 Adresse: " + m.street;
-        
-        var extraParts = [];
-        if (m.operator) extraParts.push("Betreiber: " + m.operator);
-        if (m.hours) extraParts.push("🕒 " + m.hours);
-        var extraEl = document.getElementById("detail-extra");
-        if (extraParts.length > 0) {
-          extraEl.innerText = extraParts.join(" • ");
-          extraEl.classList.remove("hidden");
-        } else {
-          extraEl.classList.add("hidden");
-        }
-
-        // Prüfen, ob dieser Markt laut not-egg.de/bezugsquellen das Produkt schon hat!
-        var listedBanner = document.getElementById("already-listed-banner");
-        var restockTopicIndex = currentCamp.topics.findIndex(function(t) { return t.id === "restock"; });
-
-        if (m.hasNotEgg) {
-          listedBanner.classList.remove("hidden");
-          if (restockTopicIndex !== -1 && currentTopicIndex !== restockTopicIndex) {
-            currentTopicIndex = restockTopicIndex;
-            renderTopicButtons();
-            selectedIndices.middle = 0;
-          }
-        } else {
-          listedBanner.classList.add("hidden");
-          if (currentTopicIndex === restockTopicIndex) {
-            currentTopicIndex = 0;
-            renderTopicButtons();
-            selectedIndices.middle = 0;
-          }
-        }
+    var found = [], skipped = 0, data = null;
+    if (origin) {
+      setProgress("3/3: REWE- und EDEKA-Märkte im Umkreis suchen", 70);
+      data = await queryOverpass(origin.lat, origin.lon, 7000);
+      if (stale()) return;
+      if (data && (!data.elements || data.elements.length === 0)) {
+        setProgress("Wenig los hier, Suche auf 15 km erweitert", 85);
+        data = await queryOverpass(origin.lat, origin.lon, 15000);
+        if (stale()) return;
       }
-      renderEmail();
+      if (!data) mapsDown = true;
     }
 
-    function setProgress(stepText, percent) {
-      var container = document.getElementById("progress-container");
-      var textEl = document.getElementById("progress-step-text");
-      var pctEl = document.getElementById("progress-percent");
-      var barEl = document.getElementById("progress-bar");
-      container.classList.remove("hidden");
-      textEl.innerText = stepText;
-      pctEl.innerText = percent + "%";
-      barEl.style.width = percent + "%";
-    }
+    var seen = {};
+    known.forEach(function (m) { seen[m.brand + "|" + m.zip + "|" + streetKey(m.street)] = m; });
 
-    function hideProgress() {
-      document.getElementById("progress-container").classList.add("hidden");
-    }
-
-    function showStatus(msg, isWarning) {
-      var statusEl = document.getElementById("search-status");
-      statusEl.classList.remove("hidden");
-      statusEl.className = isWarning
-        ? "text-xs mb-2.5 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900"
-        : "text-xs mb-2.5 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 font-medium";
-      statusEl.innerText = msg;
-    }
-
-    async function fetchWithTimeout(url, options, timeoutMs) {
-      var controller = new AbortController();
-      var id = setTimeout(function() { controller.abort(); }, timeoutMs);
-      try {
-        var reqOpts = Object.assign({}, options, { signal: controller.signal });
-        var res = await fetch(url, reqOpts);
-        clearTimeout(id);
-        return res;
-      } catch (e) {
-        clearTimeout(id);
-        throw e;
-      }
-    }
-
-    // Schnelle Overpass-Abfrage (Exaktes Tag-Matching statt langsamem Full-Scan)
-    async function queryOverpassRadius(lat, lon, radiusMeters) {
-      var overpassQuery = '[out:json][timeout:8];(' +
-        'nwr["shop"="supermarket"]["brand"~"^(REWE|EDEKA|Rewe|Edeka)"](around:' + radiusMeters + ',' + lat + ',' + lon + ');' +
-        'nwr["shop"="supermarket"]["name"~"^(REWE|EDEKA|Rewe|Edeka)"](around:' + radiusMeters + ',' + lat + ',' + lon + ');' +
-        ');out center tags;';
-
-      var endpoints = [
-        "https://overpass-api.de/api/interpreter",
-        "https://overpass.private.coffee/api/interpreter",
-        "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
-      ];
-
-      for (var i = 0; i < endpoints.length; i++) {
-        try {
-          var ovRes = await fetchWithTimeout(endpoints[i], {
-            method: "POST",
-            body: "data=" + encodeURIComponent(overpassQuery)
-          }, 8000);
-          if (ovRes.ok) {
-            return await ovRes.json();
-          }
-        } catch (e) {}
-      }
-      return null;
-    }
-
-    async function searchGermanyMarkets() {
-      var query = document.getElementById("zip-input").value.trim();
-      var btn = document.getElementById("search-btn");
-
-      if (!query) {
-        activeMarkets = CUSTOM_MARKETS.slice();
-        populateMarketDropdown(activeMarkets);
+    ((data && data.elements) || []).forEach(function (el) {
+      var m = marketFromOsm(el, origin);
+      if (!m) { skipped++; return; }
+      var stockist = findStockist(m.brand, m.zip, m.streetOnly);
+      var key = stockist
+        ? stockist.brand + "|" + stockist.zip + "|" + stockist.key
+        : m.brand + "|" + m.zip + "|" + streetKey(m.streetOnly);
+      var twin = seen[key];
+      if (twin) {                       /* schon in der Liste: nur ergänzen */
+        if (!twin.email && m.email) twin.email = m.email;
+        if (!twin.hours && m.hours) twin.hours = m.hours;
+        if (typeof twin.km !== "number" && typeof m.km === "number") twin.km = m.km;
         return;
       }
-
-      isManualMode = false;
-      document.getElementById("manual-market-box").classList.add("hidden");
-      document.getElementById("dropdown-wrapper").classList.remove("hidden");
-
-      btn.disabled = true;
-      btn.innerText = "Lädt...";
-      document.getElementById("search-status").classList.add("hidden");
-
-      // Schritt 1: Lokale DB & offizielle Bezugsquellen durchsuchen (20%)
-      setProgress("Schritt 1/3: Prüfe bekannte Märkte & Bezugsquellen...", 20);
-      var qLower = query.toLowerCase();
-
-      var stockistMatches = NOT_EGG_STOCKISTS.filter(function(m) {
-        return m.zip.toLowerCase().indexOf(qLower) !== -1 ||
-               m.street.toLowerCase().indexOf(qLower) !== -1 ||
-               m.name.toLowerCase().indexOf(qLower) !== -1;
-      });
-
-      var localMatches = CUSTOM_MARKETS.filter(function(m) {
-        return m.zip.toLowerCase().indexOf(qLower) !== -1 ||
-               m.street.toLowerCase().indexOf(qLower) !== -1 ||
-               m.name.toLowerCase().indexOf(qLower) !== -1;
-      });
-
-      try {
-        // Schritt 2: Koordinaten über Photon (Komoot) oder Nominatim holen (45%)
-        setProgress("Schritt 2/3: Ermittle Koordinaten für '" + query + "'...", 45);
-        var lat = null;
-        var lon = null;
-
-        try {
-          var photonUrl = "https://photon.komoot.io/api/?q=" + encodeURIComponent(query + " Deutschland") + "&limit=3";
-          var pRes = await fetchWithTimeout(photonUrl, {}, 4000);
-          if (pRes.ok) {
-            var pData = await pRes.json();
-            if (pData && pData.features && pData.features.length > 0) {
-              var coords = pData.features[0].geometry.coordinates;
-              lon = coords[0];
-              lat = coords[1];
-            }
-          }
-        } catch (e) {}
-
-        if (lat === null) {
-          var geoUrl = "https://nominatim.openstreetmap.org/search?format=json&countrycodes=de&limit=1&q=" + encodeURIComponent(query);
-          var geoRes = await fetchWithTimeout(geoUrl, { headers: { "Accept-Language": "de" } }, 5000);
-          if (geoRes.ok) {
-            var geoData = await geoRes.json();
-            if (geoData && geoData.length > 0) {
-              lat = parseFloat(geoData[0].lat);
-              lon = parseFloat(geoData[0].lon);
-            }
-          }
-        }
-
-        if (lat === null || lon === null) {
-          hideProgress();
-          showStatus("⚠️ PLZ oder Ort '" + query + "' wurde in Deutschland nicht gefunden. Bitte prüfe die Schreibweise.", true);
-          btn.disabled = false;
-          btn.innerText = "Suchen";
-          return;
-        }
-
-        // Schritt 3: Schnelle Umkreissuche (75%)
-        setProgress("Schritt 3/3: Suche echte REWE & EDEKA Märkte im Umkreis...", 75);
-        var data = await queryOverpassRadius(lat, lon, 7000);
-
-        // Falls ländliches Gebiet (z.B. 59846 Sundern) im 7-km-Radius leer ist -> automatisch auf 15 km erweitern!
-        if (data && (!data.elements || data.elements.length === 0)) {
-          setProgress("Ländliche Region erkannt – erweitere Suchradius auf 15 km...", 88);
-          data = await queryOverpassRadius(lat, lon, 15000);
-        }
-
-        var fetchedMarkets = [];
-        var seenKeys = {};
-
-        var preCombined = stockistMatches.concat(localMatches);
-        var uniquePre = [];
-        preCombined.forEach(function(m) {
-          var k = (m.brand + "_" + m.street.substring(0, 12)).toLowerCase();
-          if (!seenKeys[k]) {
-            seenKeys[k] = true;
-            uniquePre.push(m);
-          }
-        });
-
-        var isZip = /^\d{5}$/.test(query);
-
-        if (data && data.elements) {
-          data.elements.forEach(function(el) {
-            var tags = el.tags || {};
-            var rawName = tags.name || tags.brand || "Supermarkt";
-            var brand = (rawName.toUpperCase().indexOf("EDEKA") !== -1 || (tags.brand && tags.brand.toUpperCase().indexOf("EDEKA") !== -1)) ? "EDEKA" : "REWE";
-            
-            var street = tags["addr:street"] || "";
-            var housenumber = tags["addr:housenumber"] || "";
-            var postcode = tags["addr:postcode"] || "";
-            var city = tags["addr:city"] || tags["addr:town"] || tags["addr:village"] || "";
-            var suburb = tags["addr:suburb"] || tags["addr:quarter"] || "";
-            var operator = tags["operator"] || tags["branch"] || "";
-            var hours = tags["opening_hours"] || "";
-            var contactEmail = tags["contact:email"] || tags["email"] || "";
-
-            // WICHTIG: Verhindere Geister-Märkte ohne Orts-/Straßenangabe!
-            if (!street && !city && !suburb && !operator) {
-              return;
-            }
-
-            var displayName = rawName;
-            if (tags["branch"] && displayName.indexOf(tags["branch"]) === -1) {
-              displayName += " (" + tags["branch"] + ")";
-            }
-
-            var streetPart = (street + " " + housenumber).trim();
-            var cityPart = ((postcode || (isZip ? query : "")) + " " + (city || (!isZip ? query : ""))).trim();
-            if (suburb && cityPart.indexOf(suburb) === -1) {
-              cityPart += " (" + suburb + ")";
-            }
-
-            var fullAddress = (streetPart && cityPart) 
-              ? (streetPart + ", " + cityPart) 
-              : (streetPart || cityPart);
-
-            var dedupKey = (brand + "_" + fullAddress.substring(0, 12)).toLowerCase();
-            if (!seenKeys[dedupKey]) {
-              seenKeys[dedupKey] = true;
-              var alreadyListed = checkIfStockist(postcode || query, displayName, fullAddress);
-              fetchedMarkets.push({
-                zip: postcode || (isZip ? query : ""),
-                brand: brand,
-                name: displayName,
-                street: fullAddress,
-                operator: operator,
-                hours: hours,
-                email: contactEmail,
-                hasNotEgg: alreadyListed
-              });
-            }
-          });
-        }
-
-        fetchedMarkets.sort(function(a, b) {
-          var aExact = a.zip === query ? 0 : 1;
-          var bExact = b.zip === query ? 0 : 1;
-          return aExact - bExact;
-        });
-
-        var finalMarkets = uniquePre.concat(fetchedMarkets);
-        hideProgress();
-
-        if (finalMarkets.length > 0) {
-          activeMarkets = finalMarkets;
-          var stockistCount = finalMarkets.filter(function(m) { return m.hasNotEgg; }).length;
-          var extraInfo = stockistCount > 0 ? " (davon " + stockistCount + "x bereits mit Not-Egg!)" : "";
-          showStatus("✅ " + finalMarkets.length + " echte Märkte für '" + query + "' gefunden" + extraInfo, false);
-          populateMarketDropdown(activeMarkets);
-        } else {
-          // KEINE FIKTIVEN MÄRKTE ERFINDEN! Stattdessen ehrlicher Hinweis + Manuelles Feld öffnen
-          showStatus("ℹ️ In '" + query + "' wurden keine REWE- oder EDEKA-Märkte gefunden. Bitte prüfe die Nachbar-PLZ oder trage deinen Markt unten manuell ein.", true);
-          toggleManualMarket();
-        }
-
-      } catch (err) {
-        hideProgress();
-        if (uniquePre && uniquePre.length > 0) {
-          activeMarkets = uniquePre;
-          showStatus("✅ " + activeMarkets.length + " gespeicherte Märkte für '" + query + "' geladen.", false);
-          populateMarketDropdown(activeMarkets);
-        } else {
-          showStatus("ℹ️ Kartendienst momentan langsam. Bitte wähle deinen Markt über die manuelle Eingabe unten aus.", true);
-          if (!isManualMode) toggleManualMarket();
-        }
-      } finally {
-        btn.disabled = false;
-        btn.innerText = "Suchen";
+      if (stockist) {
+        m.hasNotEgg = true;
+        m.name = stockist.name;
+        m.street = stockist.street;
+        m.zip = stockist.zip;
       }
+      seen[key] = m;
+      found.push(m);
+    });
+
+    found.sort(function (a, b) {
+      return (typeof a.km === "number" ? a.km : 999) - (typeof b.km === "number" ? b.km : 999);
+    });
+
+    markets = known.concat(found);
+    hideProgress();
+    populateMarketDropdown();
+
+    if (markets.length > 0) {
+      var stocked = markets.filter(function (m) { return m.hasNotEgg; }).length;
+      var msg = markets.length + (markets.length === 1 ? " Markt" : " Märkte") + " für „" + query + "“ gefunden";
+      if (stocked > 0) msg += ", davon " + stocked + " mit Not Egg";
+      msg += ".";
+      if (skipped > 0) msg += " " + skipped + " weitere stehen ohne Adresse in der Karte. Fehlt deiner, trag ihn unten selbst ein.";
+      if (mapsDown) msg += " Die Kartensuche war nicht erreichbar, die Liste ist deshalb unvollständig.";
+      showStatus(msg, mapsDown);
+      setManualMode(false);
+    } else if (mapsDown) {
+      showStatus("Die Kartensuche ist gerade nicht erreichbar. Versuch es gleich noch einmal oder trag deinen Markt unten selbst ein.", true);
+      setManualMode(true);
+    } else {
+      showStatus("Im Umkreis von 15 km um „" + query + "“ steht kein REWE oder EDEKA mit Adresse in der Karte. Trag deinen Markt bitte unten selbst ein.", true);
+      setManualMode(true);
     }
-
-    function replaceAllStr(str, find, replace) {
-      return str.split(find).join(replace);
+  } catch (err) {
+    if (stale()) return;
+    hideProgress();
+    showStatus("Bei der Suche ist etwas schiefgegangen. Trag deinen Markt bitte unten selbst ein.", true);
+    setManualMode(true);
+  } finally {
+    if (!stale()) {
+      btn.disabled = false;
+      btn.textContent = "Suchen";
     }
+  }
+}
 
-    function renderEmail() {
-      var userName = document.getElementById("user-name").value.trim() || "[Dein Name]";
-      var toEmail = currentCamp.recipient || "";
-      var ccEmail = currentCamp.cc || "";
-      var marketName = "";
-      var marketStreet = "";
-      var isAlreadyStockist = false;
+/* =====================================================================
+   E-MAIL
+   ===================================================================== */
 
-      if (currentCamp.mode === "local") {
-        if (isManualMode) {
-          var mBrand = document.getElementById("manual-brand").value;
-          marketName = document.getElementById("manual-name").value.trim() || (mBrand + " Markt");
-          marketStreet = document.getElementById("manual-street").value.trim() || "[Straße & Ort eintragen]";
-          var zipMatch = marketStreet.match(/\b(\d{5})\b/);
-          var extractedZip = zipMatch ? zipMatch[1] : document.getElementById("zip-input").value.trim();
-          toEmail = mBrand === "EDEKA" ? getEdekaRegionalEmail(extractedZip) : "kundenmanagement@rewe.de";
-          ccEmail = (mBrand === "EDEKA" && toEmail !== "info@edeka.de") ? "info@edeka.de" : "";
-        } else {
-          var select = document.getElementById("market-select");
-          var market = activeMarkets[select.value] || activeMarkets[0];
-          marketName = market.name;
-          marketStreet = market.street;
-          isAlreadyStockist = !!market.hasNotEgg;
+function renderEmail() {
+  var topic = currentTopic();
+  var market = currentMarket();
+  var rcpt = camp.mode === "local" ? recipientsFor(market) : { to: camp.recipient || "", cc: camp.cc || "" };
 
-          var corporateEmail = market.brand === "EDEKA" 
-            ? getEdekaRegionalEmail(market.zip) 
-            : "kundenmanagement@rewe.de";
+  var vars = {
+    user_name: $("user-name").value.trim() || PH_NAME,
+    market_name: market ? market.name : PH_MARKET,
+    market_street: (market && market.street) ? market.street : PH_STREET,
+    brand: market ? market.brand : "Markt"
+  };
 
-          if (market.email) {
-            toEmail = market.email;
-            ccEmail = corporateEmail;
-          } else {
-            toEmail = corporateEmail;
-            ccEmail = market.brand === "EDEKA" && corporateEmail !== "info@edeka.de" ? "info@edeka.de" : "";
-          }
-        }
-      }
+  /* Ein Thema darf subjects, intro, impact und outro selbst mitbringen. */
+  var subjects = topic.subjects || camp.subjects;
+  var intro = topic.intro || camp.blocks.intro;
+  var impact = topic.impact || camp.blocks.impact;
+  var outro = topic.outro || camp.blocks.outro;
 
-      function replacePlaceholders(text) {
-        var res = replaceAllStr(text, "{{user_name}}", userName);
-        res = replaceAllStr(res, "{{market_name}}", marketName);
-        res = replaceAllStr(res, "{{market_street}}", marketStreet);
-        return res;
-      }
+  var body = [
+    pick(intro, roll.intro),
+    pick(topic.middleVariants, roll.middle),
+    pick(impact, roll.impact),
+    pick(outro, roll.outro)
+  ].join("\n\n");
 
-      var currentTopicObj = currentCamp.topics[currentTopicIndex] || currentCamp.topics[0];
-      var middleVariants = currentTopicObj.middleVariants;
-      
-      var subjectPool = (currentTopicObj.id === "restock" && currentCamp.restockSubjects)
-        ? currentCamp.restockSubjects
-        : currentCamp.subjects;
+  $("preview-to").textContent = rcpt.to;
+  $("preview-cc").textContent = rcpt.cc;
+  $("preview-cc-wrap").classList.toggle("hidden", !rcpt.cc);
+  $("preview-subject").value = fill(pick(subjects, roll.subject), vars);
+  $("preview-body").value = fill(body, vars);
+  updateLinks();
+}
 
-      var rawSubject = subjectPool[selectedIndices.subject % subjectPool.length] || subjectPool[0];
-      var rawBody = [
-        currentCamp.blocks.intro[selectedIndices.intro] || currentCamp.blocks.intro[0],
-        middleVariants[selectedIndices.middle] || middleVariants[0],
-        currentCamp.blocks.impact[selectedIndices.impact] || currentCamp.blocks.impact[0],
-        currentCamp.blocks.outro[selectedIndices.outro] || currentCamp.blocks.outro[0]
-      ].join("\n\n");
+/* Gibt zurück, was vor dem Senden noch fehlt (leerer Text = alles da). */
+function missingInfo() {
+  var text = $("preview-subject").value + "\n" + $("preview-body").value;
+  var missing = [];
+  if (!$("preview-to").textContent.trim() || text.indexOf(PH_MARKET) !== -1) missing.push("such oben deinen Markt aus");
+  else if (text.indexOf(PH_STREET) !== -1) missing.push("trag die Adresse des Marktes ein");
+  if (text.indexOf(PH_NAME) !== -1) missing.push("trag deinen Namen ein");
+  return missing.length ? "Fast fertig: Bitte " + missing.join(" und ") + "." : "";
+}
 
-      document.getElementById("preview-to").innerText = toEmail;
-      var ccWrap = document.getElementById("preview-cc-wrap");
-      if (ccEmail) {
-        ccWrap.classList.remove("hidden");
-        document.getElementById("preview-cc").innerText = ccEmail;
-      } else {
-        ccWrap.classList.add("hidden");
-        document.getElementById("preview-cc").innerText = "";
-      }
+function updateLinks() {
+  var to = $("preview-to").textContent.trim();
+  var cc = $("preview-cc").textContent.trim();
+  var subject = $("preview-subject").value;
+  var body = $("preview-body").value.replace(/\r?\n/g, "\r\n");
 
-      document.getElementById("preview-subject").value = replacePlaceholders(rawSubject);
-      document.getElementById("preview-body").value = replacePlaceholders(rawBody);
+  var mailto = "mailto:" + to + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  if (cc) mailto += "&cc=" + encodeURIComponent(cc);
+  $("mailto-btn").setAttribute("href", mailto);
 
-      updateMailtoLink();
-    }
+  var gmail = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to) +
+              "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  if (cc) gmail += "&cc=" + encodeURIComponent(cc);
+  $("gmail-btn").setAttribute("href", gmail);
 
-    function updateMailtoLink() {
-      var to = document.getElementById("preview-to").innerText.trim();
-      var cc = document.getElementById("preview-cc").innerText.trim();
-      var subject = document.getElementById("preview-subject").value;
-      var body = document.getElementById("preview-body").value.replace(/\r?\n/g, "\r\n");
+  if (!missingInfo()) $("send-hint").classList.add("hidden");
+}
 
-      var mailtoHref = "mailto:" + to + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-      if (cc) {
-        mailtoHref += "&cc=" + encodeURIComponent(cc);
-      }
-      document.getElementById("mailto-btn").setAttribute("href", mailtoHref);
+/* Verhindert, dass eine Mail mit "[Dein Name]" oder ohne Markt rausgeht. */
+function guardSend(event) {
+  var msg = missingInfo();
+  if (!msg) return;
+  event.preventDefault();
+  var hint = $("send-hint");
+  hint.textContent = msg;
+  hint.classList.remove("hidden");
+  hint.scrollIntoView({ block: "center", behavior: "smooth" });
+}
 
-      var gmailHref = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to) + "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
-      if (cc) {
-        gmailHref += "&cc=" + encodeURIComponent(cc);
-      }
-      document.getElementById("gmail-btn").setAttribute("href", gmailHref);
-    }
+function copyPart(part, btn) {
+  var text = part === "to" ? $("preview-to").textContent
+           : part === "subject" ? $("preview-subject").value
+           : $("preview-body").value;
+  var original = btn.textContent;
+  var done = function (ok) {
+    btn.textContent = ok ? "✅ Kopiert" : "⚠️ Bitte markieren";
+    setTimeout(function () { btn.textContent = original; }, 1500);
+  };
+  var fallback = function () {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    done(ok);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+  } else {
+    fallback();
+  }
+}
 
-    function copyPart(part, btnEl) {
-      var textToCopy = "";
-      if (part === "to") textToCopy = document.getElementById("preview-to").innerText;
-      if (part === "subject") textToCopy = document.getElementById("preview-subject").value;
-      if (part === "body") textToCopy = document.getElementById("preview-body").value;
-
-      navigator.clipboard.writeText(textToCopy).then(function() {
-        var originalText = btnEl.innerText;
-        btnEl.innerText = "✅ Kopiert";
-        setTimeout(function() { btnEl.innerText = originalText; }, 1500);
-      });
-    }
-
-    initApp();
-  </script>
+initApp();
+</script>
 </body>
 </html>
