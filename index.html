@@ -58,7 +58,7 @@
       <!-- Gefundene Märkte -->
       <div id="dropdown-wrapper" class="hidden">
         <label for="market-select" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Markt auswählen</label>
-        <select id="market-select"
+        <select id="market-select" autocomplete="off"
           class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-2"></select>
 
         <div id="already-listed-banner" class="hidden mb-2 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs leading-relaxed">
@@ -84,14 +84,14 @@
       <div id="manual-market-box" class="hidden mt-2 pt-2.5 border-t border-slate-200 space-y-2">
         <p class="text-xs text-slate-600 font-medium">Trag den Markt ein, in dem du wirklich einkaufst:</p>
         <div class="grid grid-cols-3 gap-2">
-          <select id="manual-brand" aria-label="Kette" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white font-bold">
+          <select id="manual-brand" autocomplete="off" aria-label="Kette" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs bg-white font-bold">
             <option value="REWE">REWE</option>
             <option value="EDEKA">EDEKA</option>
           </select>
-          <input type="text" id="manual-name" aria-label="Name des Marktes" placeholder="Name (z.B. EDEKA Müller)"
+          <input type="text" id="manual-name" autocomplete="off" aria-label="Name des Marktes" placeholder="Name (z.B. EDEKA Müller)"
             class="col-span-2 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
         </div>
-        <input type="text" id="manual-street" aria-label="Adresse des Marktes" placeholder="Straße, Hausnr., PLZ und Ort"
+        <input type="text" id="manual-street" autocomplete="off" aria-label="Adresse des Marktes" placeholder="Straße, Hausnr., PLZ und Ort"
           class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
       </div>
 
@@ -125,11 +125,11 @@
         <div class="text-xs text-slate-500 break-all">An: <strong id="preview-to" class="font-mono text-slate-800"></strong></div>
         <div id="preview-cc-wrap" class="text-xs text-slate-400 font-mono break-all hidden">Kopie (CC): <span id="preview-cc"></span></div>
         <div class="pt-1.5 border-t border-slate-200">
-          <input type="text" id="preview-subject" aria-label="Betreff"
+          <input type="text" id="preview-subject" autocomplete="off" aria-label="Betreff"
             class="w-full bg-transparent font-bold text-sm text-slate-900 focus:outline-none">
         </div>
       </div>
-      <textarea id="preview-body" rows="11"
+      <textarea id="preview-body" rows="11" autocomplete="off"
         class="w-full border border-slate-300 rounded-b-xl p-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans"></textarea>
       <p class="mt-1 text-[11px] text-slate-400">Du kannst Betreff und Text frei ändern. Eigene Sätze kommen am besten an.</p>
     </div>
@@ -238,18 +238,18 @@ var CAMPAIGNS = {
     description: "Not Egg ist ein veganes Spiegelei aus der Tiefkühltruhe. Such deinen REWE oder EDEKA und schreib ihm in einer Minute, dass du es dort kaufen möchtest.",
     topicLabel: "Was passt zu dir?",
     subjects: [
-      "Sortimentswunsch für {{market_name}}: Not Egg (veganes Spiegelei, tiefgekühlt)",
-      "Kundenwunsch für {{market_name}}, {{market_street}}: Not Egg",
-      "Können Sie Not Egg ins Sortiment aufnehmen? ({{market_name}})",
-      "Anfrage zum Tiefkühlsortiment bei {{market_name}} ({{market_street}})"
+      "Sortimentswunsch Not Egg für {{market}}",
+      "Kundenwunsch für {{market}}: Not Egg",
+      "Können Sie Not Egg ins Sortiment aufnehmen? Markt: {{market}}",
+      "Anfrage zum Tiefkühlsortiment bei {{market}}"
     ],
     blocks: {
       intro: [
-        "Guten Tag,\n\nich kaufe regelmäßig bei {{market_name}} ({{market_street}}) ein und habe ein Anliegen zum Tiefkühlsortiment.",
-        "Hallo liebes {{brand}}-Team,\n\nich gehe fast jede Woche bei {{market_name}} ({{market_street}}) einkaufen. Heute schreibe ich wegen einer Sache aus der Tiefkühlabteilung.",
-        "Hallo,\n\nes geht um den Markt {{market_name}}, {{market_street}}. Dort mache ich die meisten meiner Einkäufe.",
-        "Guten Tag,\n\neine kurze Frage zu {{market_name}} ({{market_street}}), wo ich regelmäßig einkaufe.",
-        "Hallo zusammen,\n\n{{market_name}} ({{market_street}}) ist der Markt, in dem ich normalerweise einkaufe. Deshalb wende ich mich mit meiner Frage an Sie."
+        "Guten Tag,\n\nich kaufe regelmäßig bei {{market}} ein und habe ein Anliegen zum Tiefkühlsortiment.",
+        "Hallo liebes {{brand}}-Team,\n\nich gehe fast jede Woche bei {{market}} einkaufen. Heute schreibe ich wegen einer Sache aus der Tiefkühlabteilung.",
+        "Hallo,\n\nes geht um den Markt {{market}}. Dort mache ich die meisten meiner Einkäufe.",
+        "Guten Tag,\n\neine kurze Frage zu {{market}}, wo ich regelmäßig einkaufe.",
+        "Hallo zusammen,\n\n{{market}} ist der Markt, in dem ich normalerweise einkaufe. Deshalb wende ich mich mit meiner Frage an Sie."
       ],
       impact: [
         "Vegane Alternativen zum Ei gibt es im Tiefkühlregal bisher kaum. Das wäre also wirklich etwas Neues.",
@@ -315,9 +315,9 @@ var CAMPAIGNS = {
         onlyStocked: true,
         label: "🔄 Ich habe es im Markt nicht gefunden",
         subjects: [
-          "Ist Not Egg bei {{market_name}} vorrätig?",
-          "Frage zu Not Egg bei {{market_name}} ({{market_street}})",
-          "Not Egg im Tiefkühlregal nicht gefunden ({{market_name}})"
+          "Ist Not Egg bei {{market}} vorrätig?",
+          "Frage zu Not Egg bei {{market}}",
+          "Not Egg im Tiefkühlregal nicht gefunden, {{market}}"
         ],
         middleVariants: [
           "Laut not-egg.de/bezugsquellen führt der Markt Not Egg, das vegane Spiegelei aus der Tiefkühltruhe. Bei meinem letzten Einkauf habe ich es nicht gefunden. Ist es zurzeit vorrätig?",
@@ -531,7 +531,7 @@ async function fetchJson(url, options, timeoutMs) {
 
 var PH_NAME = "[Dein Name]";
 var PH_MARKET = "[dein Markt]";
-var PH_STREET = "[Adresse des Marktes]";
+var PH_STREET = "[Adresse eintragen]";
 
 var camp = null;
 var topicId = "";
@@ -584,6 +584,18 @@ function initApp() {
   $("gmail-btn").addEventListener("click", guardSend);
   document.querySelectorAll("[data-copy]").forEach(function (btn) {
     btn.addEventListener("click", function () { copyPart(btn.getAttribute("data-copy"), btn); });
+  });
+
+  /* Manche Browser (z.B. Firefox) füllen Formularfelder nach dem Neuladen
+     mit alten Werten. Das würde alten Text in die Markt-Felder schreiben.
+     Deshalb nach dem Laden einmal aufräumen und neu aufbauen.            */
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted) return;          /* Rückkehr aus der Mail-App: nichts anfassen */
+    $("manual-name").value = "";
+    $("manual-street").value = "";
+    $("manual-brand").value = "REWE";
+    $("user-name").value = recall("vmom-name");
+    onMarketChange();
   });
 
   $("user-name").value = recall("vmom-name");
@@ -817,10 +829,43 @@ async function queryOverpass(lat, lon, radius) {
   ];
   for (var i = 0; i < endpoints.length; i++) {
     try {
-      return await fetchJson(endpoints[i], { method: "POST", body: new URLSearchParams({ data: q }) }, 12000);
+      return await fetchJson(endpoints[i], { method: "POST", body: new URLSearchParams({ data: q }) }, 8000);
     } catch (e) {}
   }
   return null;
+}
+
+/* Hauptsuche: Photon kennt auch Geschäfte und antwortet schnell und
+   zuverlässig. Rückgabe im selben Format wie Overpass ({elements: [...]}),
+   oder null, wenn Photon nicht erreichbar ist.                          */
+async function queryPhoton(lat, lon) {
+  var answers = await Promise.all(["REWE", "EDEKA"].map(function (brand) {
+    var url = "https://photon.komoot.io/api/?q=" + brand + "&lat=" + lat + "&lon=" + lon +
+              "&osm_tag=shop:supermarket&limit=25&lang=de";
+    return fetchJson(url, {}, 7000).then(function (d) {
+      return { brand: brand, list: (d && d.features) || [] };
+    }, function () { return null; });
+  }));
+  if (!answers[0] && !answers[1]) return null;
+  var elements = [];
+  answers.forEach(function (a) {
+    if (!a) return;
+    a.list.forEach(function (f) {
+      var p = f.properties || {};
+      if ((p.countrycode || "").toUpperCase() !== "DE" || !f.geometry) return;
+      if (!new RegExp("^" + a.brand, "i").test(p.name || "")) return;
+      elements.push({
+        lat: f.geometry.coordinates[1],
+        lon: f.geometry.coordinates[0],
+        tags: {
+          name: p.name, brand: a.brand,
+          "addr:street": p.street, "addr:housenumber": p.housenumber,
+          "addr:postcode": p.postcode, "addr:city": p.city
+        }
+      });
+    });
+  });
+  return { elements: elements };
 }
 
 /* Wandelt einen OSM-Eintrag in einen Markt um. Es werden nur Angaben
@@ -837,6 +882,7 @@ function marketFromOsm(el, origin) {
 
   var name = (t.name || t.brand || "").trim();
   var brand = /edeka/i.test(name + " " + (t.brand || "")) ? "EDEKA" : "REWE";
+  if (/^(rewe|edeka)$/i.test(name)) name = brand;          /* "Rewe" -> "REWE" */
   if (t.branch && name.indexOf(t.branch) === -1) name += " " + t.branch;
 
   var streetPart = (street + " " + number).trim();
@@ -893,12 +939,13 @@ async function searchMarkets() {
     var found = [], skipped = 0, data = null;
     if (origin) {
       setProgress("3/3: REWE- und EDEKA-Märkte im Umkreis suchen", 70);
-      data = await queryOverpass(origin.lat, origin.lon, 7000);
+      data = await queryPhoton(origin.lat, origin.lon);
       if (stale()) return;
-      if (data && (!data.elements || data.elements.length === 0)) {
-        setProgress("Wenig los hier, Suche auf 15 km erweitert", 85);
-        data = await queryOverpass(origin.lat, origin.lon, 15000);
+      if (!data || data.elements.length === 0) {       /* Reserve: Overpass */
+        setProgress("3/3: Zweiter Kartendienst wird gefragt", 85);
+        var viaOverpass = await queryOverpass(origin.lat, origin.lon, 15000);
         if (stale()) return;
+        if (viaOverpass) data = viaOverpass;
       }
       if (!data) mapsDown = true;
     }
@@ -933,6 +980,9 @@ async function searchMarkets() {
     found.sort(function (a, b) {
       return (typeof a.km === "number" ? a.km : 999) - (typeof b.km === "number" ? b.km : 999);
     });
+    /* Erst 8 km Umkreis. Nur wenn dort nichts liegt, bis 15 km gehen. */
+    var near = found.filter(function (m) { return typeof m.km !== "number" || m.km <= 8; });
+    found = near.length ? near : found.filter(function (m) { return m.km <= 15; });
 
     markets = known.concat(found);
     hideProgress();
@@ -943,7 +993,6 @@ async function searchMarkets() {
       var msg = markets.length + (markets.length === 1 ? " Markt" : " Märkte") + " für „" + query + "“ gefunden";
       if (stocked > 0) msg += ", davon " + stocked + " mit Not Egg";
       msg += ".";
-      if (skipped > 0) msg += " " + skipped + " weitere stehen ohne Adresse in der Karte. Fehlt deiner, trag ihn unten selbst ein.";
       if (mapsDown) msg += " Die Kartensuche war nicht erreichbar, die Liste ist deshalb unvollständig.";
       showStatus(msg, mapsDown);
       setManualMode(false);
@@ -980,6 +1029,8 @@ function renderEmail() {
     user_name: $("user-name").value.trim() || PH_NAME,
     market_name: market ? market.name : PH_MARKET,
     market_street: (market && market.street) ? market.street : PH_STREET,
+    /* Name plus Adresse in einem Stück, z.B. "REWE (Horster Straße 367, 46240 Bottrop)" */
+    market: market ? market.name + " (" + (market.street || PH_STREET) + ")" : PH_MARKET,
     brand: market ? market.brand : "Markt"
   };
 
@@ -1009,7 +1060,7 @@ function missingInfo() {
   var text = $("preview-subject").value + "\n" + $("preview-body").value;
   var missing = [];
   if (!$("preview-to").textContent.trim() || text.indexOf(PH_MARKET) !== -1) missing.push("such oben deinen Markt aus");
-  else if (text.indexOf(PH_STREET) !== -1) missing.push("trag die Adresse des Marktes ein");
+  else if (text.indexOf(PH_STREET) !== -1) missing.push("trag oben die Adresse des Marktes ein");
   if (text.indexOf(PH_NAME) !== -1) missing.push("trag deinen Namen ein");
   return missing.length ? "Fast fertig: Bitte " + missing.join(" und ") + "." : "";
 }
