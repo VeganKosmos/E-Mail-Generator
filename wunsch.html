@@ -1003,9 +1003,7 @@ function renderStyleButtons() {
 function rollNewCombination() {
   var before = $("preview-body").value;
   for (var i = 0; i < 5; i++) {       /* nicht zweimal denselben Text würfeln */
-    roll = randomRoll();
-    /* Wer den Stil nicht selbst gewählt hat, bekommt beim Würfeln auch mal einen anderen. */
-    if (!styleByUser) style = pickStyle();
+    roll = randomRoll();             /* neuer Text, Stil bleibt der markierte */
     renderEmail();
     if ($("preview-body").value !== before) break;
   }
