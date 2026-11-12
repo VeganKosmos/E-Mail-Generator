@@ -58,7 +58,7 @@ body{margin:0;padding:20px 16px 48px;background:var(--global-palette2);color:var
 #vm-app .bg-slate-200{background-color:var(--ne-linie)}
 #vm-app .bg-slate-900{background-color:var(--ne-gruen)}
 #vm-app #vm-camp-title{font-family:var(--ne-titel);color:var(--ne-gruen);font-weight:700}
-#vm-app label.font-bold,#vm-app #vm-topic-label,#vm-app summary{font-family:var(--ne-titel);color:var(--ne-gruen)}
+#vm-app label.font-bold,#vm-app #vm-topic-label,#vm-app #vm-style-label,#vm-app summary{font-family:var(--ne-titel);color:var(--ne-gruen)}
 #vm-app .bg-emerald-600{background-color:var(--ne-orange)}
 #vm-app .hover\:bg-emerald-700:hover{background-color:var(--ne-orange);filter:brightness(.93)}
 #vm-app #vm-search-btn,#vm-app #vm-mailto-btn{border-radius:6px;font-family:var(--ne-titel)}
@@ -73,7 +73,7 @@ body{margin:0;padding:20px 16px 48px;background:var(--global-palette2);color:var
 #vm-app [data-copy],#vm-app #vm-gmail-btn,#vm-app #vm-share-copy,#vm-app #vm-share-save,#vm-app #vm-share-native{border-radius:6px}
 #vm-app #vm-gmail-btn{background-color:#fff;border-color:var(--ne-linie);color:var(--ne-text)}
 #vm-app #vm-gmail-btn:hover{background-color:var(--ne-flaeche)}
-#vm-app #vm-topic-buttons button[aria-pressed="true"]{background-color:var(--ne-gruen);border-color:var(--ne-gruen);color:#fff}
+#vm-app #vm-topic-buttons button[aria-pressed="true"],#vm-app #vm-style-buttons button[aria-pressed="true"]{background-color:var(--ne-gruen);border-color:var(--ne-gruen);color:#fff}
 #vm-app #vm-already-listed-banner a{color:var(--ne-gruen)}
 #vm-app a.underline{color:inherit}
 </style>
@@ -150,6 +150,11 @@ body{margin:0;padding:20px 16px 48px;background:var(--global-palette2);color:var
     <div id="vm-topic-section" class="mb-5">
       <div class="block text-sm font-bold text-slate-800 mb-2" id="vm-topic-label"></div>
       <div id="vm-topic-buttons" class="grid grid-cols-1 gap-2"></div>
+    </div>
+    <!-- TON: Stil der E-Mail. Einer ist vorausgewählt, Besucher können umschalten. -->
+    <div id="vm-style-section" class="mb-5">
+      <div class="block text-sm font-bold text-slate-800 mb-2" id="vm-style-label">Wie soll die E-Mail klingen?</div>
+      <div id="vm-style-buttons" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
     </div>
     <!-- SCHRITT 3: NAME -->
     <div class="mb-5">
@@ -322,52 +327,138 @@ var CAMPAIGNS = {
       "Produktwunsch für {{market}}: veganes Spiegelei (Not Egg)",
       "Veganes Spiegelei Not Egg für {{market}}?"
     ],
-    blocks: {
-      intro: [
-        "[[Guten Tag|Hallo|Sehr geehrte Damen und Herren]],\n\nich kaufe [[regelmäßig|oft|fast immer]] bei {{market}} ein und habe [[ein Anliegen|eine Frage|eine Bitte]] zum Tiefkühlsortiment.",
-        "Hallo liebes {{brand}}-Team,\n\nich gehe [[fast jede Woche|regelmäßig|meistens]] bei {{market}} einkaufen. Heute schreibe ich wegen einer Sache aus der Tiefkühlabteilung.",
-        "[[Hallo|Guten Tag]],\n\nes geht um den Markt {{market}}. Dort mache ich [[die meisten meiner Einkäufe|meinen Wocheneinkauf|fast alle meine Einkäufe]].",
-        "[[Guten Tag|Hallo]],\n\neine kurze Frage zu {{market}}, wo ich [[regelmäßig|seit Jahren|fast jede Woche]] einkaufe.",
-        "Hallo zusammen,\n\n{{market}} ist der Markt, in dem ich normalerweise einkaufe. Deshalb wende ich mich mit meiner Frage an Sie.",
-        "Sehr geehrte Damen und Herren,\n\nich kaufe seit [[Jahren|langer Zeit|einer ganzen Weile]] bei {{market}} ein. Heute melde ich mich mit einer Frage zum Sortiment.",
-        "Hallo {{brand}}-Team,\n\nmein Stammmarkt ist {{market}}. Zum Tiefkühlsortiment dort habe ich [[eine Frage|ein Anliegen]].",
-        "Guten Tag,\n\nich schreibe Ihnen wegen {{market}}. Das ist der Supermarkt, in dem ich [[am häufigsten|meistens|fast immer]] einkaufe.",
-        "Hallo,\n\nbei {{market}} bin ich [[fast jede Woche|mehrmals im Monat|ziemlich oft]]. Diesmal melde ich mich mit einer kurzen Frage."
-      ],
-      /* Ein leerer Eintrag "" bedeutet: Diese Mail kommt ohne Zusatz-Absatz aus. */
-      impact: [
-        "Vegane Alternativen zum Ei gibt es im Tiefkühlregal bisher kaum. Das wäre also wirklich etwas Neues.",
-        "Der Vertrieb läuft über die Vonher GmbH in Hamburg. Dort kann der Markt direkt anfragen (info@vonher.de).",
-        "Soweit ich weiß, führen es schon einige REWE- und EDEKA-Märkte. Eine Liste steht auf not-egg.de/bezugsquellen.",
-        "Da es Tiefkühlware ist, hält es sich lange. Ein Versuch wäre also kein großes Risiko.",
-        "Auf der Website steht auch der Kontakt zum Vertrieb. Ich würde es auf jeden Fall kaufen.",
-        "Gemacht ist es laut Hersteller auf Basis von Soja, Mungobohnen, Kürbis und Karotten. Das gefällt mir gut.",
-        "Die Zutaten finde ich übrigens [[gut|sympathisch|überzeugend]]: laut Hersteller sind es vor allem Soja, Mungobohnen, Kürbis und Karotten.",
-        "Wenn es im Markt läge, würde ich es [[sicher|bestimmt|auf jeden Fall]] kaufen.",
-        "Soweit ich sehe, hat der Hersteller keinen eigenen Onlineshop. Ich bin also auf den Handel angewiesen.",
-        "Vielleicht lässt es sich erst einmal für ein paar Wochen testen. Dann sieht man ja, ob es gekauft wird.",
-        "Pflanzliche Produkte landen bei mir ohnehin oft im Einkaufswagen. Ein Spiegelei ohne Ei fehlt mir im Markt aber noch.",
-        "Falls es bei der Bestellung hilft: Hinter Not Egg steht die Vonher GmbH aus Hamburg.",
-        "",
-        ""
-      ],
-      outro: [
-        "Über eine kurze Antwort würde ich mich freuen.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Falls diese Mail nicht an der richtigen Stelle gelandet ist, leiten Sie sie bitte an die Marktleitung weiter. Danke!\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Danke, dass Sie sich das ansehen.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Geben Sie mir gern Bescheid, ob das klappt.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Vielen Dank im Voraus und [[viele|freundliche|beste]] Grüße\n{{user_name}}",
-        "Ich freue mich auf Ihre Rückmeldung.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Danke für Ihre Mühe!\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Bitte geben Sie den Wunsch an die zuständige Stelle weiter, falls Sie das nicht selbst entscheiden. Vielen Dank.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Eine kurze Rückmeldung, ob das möglich ist, wäre [[schön|nett|prima]].\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-        "Vielen Dank fürs Lesen.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}"
-      ]
-    },
+    /* STILE: Jede E-Mail folgt genau einem Stil. Anrede, Zusatz, Schluss und Gruß kommen aus
+       demselben Stil und passen deshalb im Ton zusammen. "weight" bestimmt, wie oft ein Stil
+       vorausgewählt wird (der erste ist der Standard). Besucher können den Stil umschalten.
+       intro:      Anrede + wo ich einkaufe ({{market}}), ohne das Produkt zu nennen
+       impact:     Zusatz-Absatz für Wunsch-Mails ("" = Mail ohne Zusatz)
+       closing:    Schlusssatz, passt zu Wunsch und Vorratsfrage
+       closingWish: Schlusssätze, die nur zu einem Wunsch passen
+       gruss:      Grußformel, der Name wird automatisch angehängt
+       short:true  nimmt die kurzen Anliegen ("kurz") der Themen und lässt den Zusatz weg   */
+    styles: [
+      {
+        id: "freundlich", label: "Freundlich", weight: 5,
+        intro: [
+          "[[Guten Tag|Hallo]],\n\nich kaufe [[regelmäßig|oft|fast immer]] bei {{market}} ein und habe [[ein Anliegen|eine Frage|eine Bitte]] zum Tiefkühlsortiment.",
+          "[[Hallo|Guten Tag]],\n\nes geht um den Markt {{market}}. Dort mache ich [[die meisten meiner Einkäufe|meinen Wocheneinkauf|fast alle meine Einkäufe]].",
+          "[[Guten Tag|Hallo]],\n\neine kurze Frage zu {{market}}, wo ich [[regelmäßig|seit Jahren|fast jede Woche]] einkaufe.",
+          "Hallo zusammen,\n\n{{market}} ist der Markt, in dem ich normalerweise einkaufe. Deshalb wende ich mich mit meiner Frage an Sie.",
+          "Guten Tag,\n\nich schreibe Ihnen wegen {{market}}. Das ist der Supermarkt, in dem ich [[am häufigsten|meistens|fast immer]] einkaufe.",
+          "Hallo,\n\nbei {{market}} bin ich [[fast jede Woche|mehrmals im Monat|ziemlich oft]]. Diesmal melde ich mich mit einer kurzen Frage.",
+          "Guten Tag,\n\nich bin [[oft|regelmäßig]] bei {{market}} und melde mich heute wegen des Tiefkühlregals."
+        ],
+        impact: [
+          "Vegane Alternativen zum Ei gibt es im Tiefkühlregal bisher kaum. Das wäre also wirklich etwas Neues.",
+          "Der Vertrieb läuft über die Vonher GmbH in Hamburg. Dort kann der Markt direkt anfragen (info@vonher.de).",
+          "Soweit ich weiß, führen es schon einige REWE- und EDEKA-Märkte. Eine Liste steht auf not-egg.de/bezugsquellen.",
+          "Da es Tiefkühlware ist, hält es sich lange. Ein Versuch wäre also kein großes Risiko.",
+          "Auf der Website steht auch der Kontakt zum Vertrieb. Ich würde es auf jeden Fall kaufen.",
+          "Gemacht ist es laut Hersteller auf Basis von Soja, Mungobohnen, Kürbis und Karotten. Das gefällt mir gut.",
+          "Wenn es im Markt läge, würde ich es [[sicher|bestimmt|auf jeden Fall]] kaufen.",
+          "Soweit ich sehe, hat der Hersteller keinen eigenen Onlineshop. Ich bin also auf den Handel angewiesen.",
+          "Vielleicht lässt es sich erst einmal für ein paar Wochen testen. Dann sieht man ja, ob es gekauft wird.",
+          "Falls es bei der Bestellung hilft: Hinter Not Egg steht die Vonher GmbH aus Hamburg.",
+          "",
+          ""
+        ],
+        closing: [
+          "Über eine kurze Antwort würde ich mich freuen.",
+          "Falls diese Mail nicht an der richtigen Stelle gelandet ist, leiten Sie sie bitte an die Marktleitung weiter. Danke!",
+          "Danke, dass Sie sich das ansehen.",
+          "Ich freue mich auf Ihre Rückmeldung.",
+          "Danke für Ihre Mühe!",
+          "Vielen Dank fürs Lesen."
+        ],
+        closingWish: [
+          "Geben Sie mir gern Bescheid, ob das klappt.",
+          "Bitte geben Sie den Wunsch an die zuständige Stelle weiter, falls Sie das nicht selbst entscheiden. Vielen Dank.",
+          "Eine kurze Rückmeldung, ob das möglich ist, wäre [[schön|nett|prima]]."
+        ],
+        gruss: ["Viele Grüße", "Freundliche Grüße", "Beste Grüße"]
+      },
+      {
+        id: "foermlich", label: "Förmlich", weight: 2,
+        intro: [
+          "Sehr geehrte Damen und Herren,\n\nich kaufe seit [[Jahren|langer Zeit|einer ganzen Weile]] bei {{market}} ein. Heute wende ich mich mit einer Frage zum Sortiment an Sie.",
+          "Sehr geehrte Damen und Herren,\n\nich schreibe Ihnen wegen des Marktes {{market}}, in dem ich [[regelmäßig|überwiegend]] einkaufe.",
+          "Sehr geehrtes {{brand}}-Team,\n\nmein Anliegen betrifft den Markt {{market}}. Dort erledige ich [[den größten Teil|die meisten]] meiner Einkäufe.",
+          "Guten Tag,\n\nich wende mich mit einem Anliegen zum Tiefkühlsortiment bei {{market}} an Sie. Dort kaufe ich regelmäßig ein.",
+          "Sehr geehrte Damen und Herren,\n\nzum Sortiment bei {{market}} habe ich [[eine Frage|ein Anliegen]]. Ich kaufe dort [[regelmäßig|seit Jahren]] ein."
+        ],
+        impact: [
+          "Bezogen werden kann das Produkt über die Vonher GmbH in Hamburg (info@vonher.de).",
+          "Nach meiner Kenntnis führen bereits einige REWE- und EDEKA-Märkte das Produkt. Eine Übersicht finden Sie unter not-egg.de/bezugsquellen.",
+          "Da es sich um Tiefkühlware handelt, ist das Produkt lange haltbar. Das Risiko eines Versuchs dürfte gering sein.",
+          "Laut Hersteller besteht es im Wesentlichen aus Soja, Mungobohnen, Kürbis und Karotten.",
+          "Vergleichbare pflanzliche Ei-Alternativen sind im Tiefkühlregal bislang selten.",
+          "Ich würde das Produkt [[gern|in jedem Fall|auf jeden Fall]] kaufen, wenn es dort erhältlich wäre.",
+          ""
+        ],
+        closing: [
+          "Über eine Rückmeldung würde ich mich freuen.",
+          "Für eine kurze Antwort wäre ich Ihnen dankbar.",
+          "Sollte diese Nachricht nicht bei der zuständigen Stelle angekommen sein, bitte ich um Weiterleitung an die Marktleitung.",
+          "Vielen Dank für Ihre Mühe.",
+          "Ich danke Ihnen für die Prüfung meines Anliegens."
+        ],
+        closingWish: [
+          "Bitte teilen Sie mir mit, ob eine Aufnahme ins Sortiment möglich ist."
+        ],
+        gruss: ["Mit freundlichen Grüßen", "Freundliche Grüße", "Mit besten Grüßen"]
+      },
+      {
+        id: "kurz", label: "Kurz", weight: 2, short: true,
+        intro: [
+          "Hallo,\n\nich kaufe [[regelmäßig|oft|meistens]] bei {{market}} ein.",
+          "Guten Tag,\n\nkurze Frage zu {{market}}.",
+          "Hallo {{brand}}-Team,\n\nes geht um {{market}}.",
+          "Guten Tag,\n\nich melde mich wegen {{market}}, dort kaufe ich [[regelmäßig|oft]] ein."
+        ],
+        impact: [""],
+        closing: ["", "Danke!", "Vielen Dank.", "Danke für eine kurze Antwort."],
+        gruss: ["Viele Grüße", "Beste Grüße", "Freundliche Grüße"]
+      },
+      {
+        id: "persoenlich", label: "Persönlich", weight: 2,
+        intro: [
+          "Hallo liebes {{brand}}-Team,\n\nich gehe [[fast jede Woche|regelmäßig|meistens]] bei {{market}} einkaufen und bin dort [[eigentlich|insgesamt]] sehr zufrieden. Heute habe ich mal [[eine Frage|ein Anliegen]].",
+          "Hallo zusammen,\n\nich schreibe selten solche Mails, aber heute habe ich ein Anliegen. Es geht um {{market}}, wo ich [[meistens|fast immer|regelmäßig]] einkaufe.",
+          "Hallo {{brand}}-Team,\n\nmein Stammmarkt ist {{market}}. Zum Tiefkühlsortiment dort habe ich [[eine Frage|ein Anliegen]].",
+          "Liebes {{brand}}-Team,\n\nich kaufe gern bei {{market}} ein, [[schon seit Jahren|schon lange|fast jede Woche]]. Deshalb frage ich einfach mal direkt.",
+          "Hallo,\n\nheute mal eine Mail von mir. Es geht um {{market}}, meinen [[üblichen|normalen]] Supermarkt."
+        ],
+        impact: [
+          "Ich würde mich [[wirklich|sehr|riesig]] freuen, wenn das klappt.",
+          "Wenn es im Markt läge, würde ich es [[sicher|bestimmt|auf jeden Fall]] kaufen.",
+          "Pflanzliche Produkte landen bei mir ohnehin oft im Einkaufswagen. Ein Spiegelei ohne Ei fehlt mir im Markt aber noch.",
+          "Die Zutaten finde ich übrigens [[gut|sympathisch]]: laut Hersteller vor allem Soja, Mungobohnen, Kürbis und Karotten.",
+          "Ich weiß, dass Sie nicht jedes Produkt aufnehmen können. Fragen wollte ich trotzdem.",
+          "Vielleicht lässt es sich erst einmal für ein paar Wochen testen. Dann sieht man ja, ob es gekauft wird.",
+          "Falls es hilft: Den Kontakt zum Vertrieb finden Sie auf der Website von Not Egg.",
+          ""
+        ],
+        closing: [
+          "Danke, dass Sie sich die Zeit nehmen.",
+          "Ich freue mich über eine kurze Antwort.",
+          "Danke fürs Lesen!",
+          "Falls ich hier falsch bin, leiten Sie die Mail bitte an die Marktleitung weiter. Danke!",
+          "Schon mal vielen Dank.",
+          "Geben Sie mir gern kurz Bescheid."
+        ],
+        gruss: ["Viele Grüße", "Liebe Grüße", "Herzliche Grüße", "Beste Grüße"]
+      }
+    ],
     topics: [
       {
         id: "neutral",
         label: "📄 Ich möchte es einfach dort kaufen können",
+        /* Kurze Fassung für den Stil "Kurz" */
+        kurz: [
+          "Könnten Sie dort Not Egg ins Tiefkühlsortiment aufnehmen? Das ist ein veganes Spiegelei (not-egg.de).",
+          "Ich würde dort gern Not Egg kaufen, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). [[Können Sie es bestellen?|Lässt sich das einrichten?|Wäre das möglich?]]",
+          "Mir fehlt im Tiefkühlregal Not Egg, das vegane Spiegelei (not-egg.de). Könnten Sie es aufnehmen?"
+        ],
         middleVariants: [
           "Ich würde dort gern Not Egg kaufen, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de). Bisher habe ich es im Markt nicht gefunden. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?|Könnten Sie es für den Markt bestellen?|Würden Sie es ins Tiefkühlregal aufnehmen?]]",
           "Gibt es eine Möglichkeit, dort Not Egg ins Tiefkühlsortiment aufzunehmen? Das ist ein pflanzliches Spiegelei, das man gefroren kauft und nur noch kurz in der Pfanne brät (not-egg.de).",
@@ -380,6 +471,12 @@ var CAMPAIGNS = {
       {
         id: "social",
         label: "📱 Ich habe es online gesehen",
+        /* Kurze Fassung für den Stil "Kurz" */
+        kurz: [
+          "Ich habe online Not Egg gesehen, ein veganes Tiefkühl-Spiegelei (not-egg.de), und würde es gern probieren. Könnten Sie es ins Sortiment nehmen?",
+          "Im Netz bin ich auf Not Egg gestoßen, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Könnte der Markt es bestellen?",
+          "Not Egg (veganes Spiegelei, tiefgekühlt, not-egg.de) würde ich gern ausprobieren. Im Markt habe ich es nicht gefunden. Können Sie es bestellen?"
+        ],
         middleVariants: [
           "Ich habe online Not Egg gesehen, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de), und würde es gern probieren. Im Markt habe ich es leider nicht gefunden. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?|Könnten Sie es für den Markt bestellen?|Würden Sie es ins Tiefkühlregal aufnehmen?]]",
           "Im Netz bin ich auf Not Egg gestoßen, ein pflanzliches Spiegelei, das es tiefgekühlt gibt (not-egg.de). Das würde ich gern einmal selbst braten. Deshalb meine Frage, ob Sie es ins Sortiment nehmen könnten.",
@@ -392,6 +489,12 @@ var CAMPAIGNS = {
       {
         id: "distance",
         label: "🚗 Ich fahre dafür bisher extra in einen anderen Markt",
+        /* Kurze Fassung für den Stil "Kurz" */
+        kurz: [
+          "Für Not Egg, ein veganes Tiefkühl-Spiegelei (not-egg.de), fahre ich bisher extra in einen anderen Markt. Könnten Sie es auch in diesem Markt ins Sortiment nehmen?",
+          "Not Egg, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de), bekomme ich bisher nur weiter weg. Ich würde es lieber beim normalen Einkauf mitnehmen. Können Sie es bestellen?",
+          "Ich kaufe regelmäßig Not Egg (veganes Spiegelei, tiefgekühlt, not-egg.de), muss dafür aber einen Umweg fahren. Wäre es möglich, es ins Sortiment zu nehmen?"
+        ],
         middleVariants: [
           "Ich kaufe regelmäßig Not Egg, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Dafür muss ich im Moment extra zu einem anderen Markt fahren, der ein gutes Stück weiter weg ist. Könnten Sie es auch in diesem Markt ins Sortiment nehmen?",
           "Für Not Egg, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de), fahre ich zurzeit jedes Mal in einen anderen Laden. Mit Tiefkühlware ist der lange Heimweg nicht ideal. Am liebsten würde ich es einfach beim normalen Einkauf mitnehmen. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?|Könnten Sie es für den Markt bestellen?|Würden Sie es ins Tiefkühlregal aufnehmen?]]",
@@ -404,6 +507,12 @@ var CAMPAIGNS = {
       {
         id: "taste",
         label: "🍳 Ich habe es auf der VeggieWorld probiert",
+        /* Kurze Fassung für den Stil "Kurz" */
+        kurz: [
+          "Auf der VeggieWorld habe ich Not Egg probiert, ein veganes Tiefkühl-Spiegelei (not-egg.de). Es schmeckt [[wirklich|tatsächlich]] wie ein Spiegelei. Könnten Sie es ins Sortiment nehmen?",
+          "Ich habe Not Egg auf der VeggieWorld gegessen und suche es seitdem im Supermarkt. Das ist ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Können Sie es bestellen?",
+          "Not Egg, das vegane Spiegelei aus der Tiefkühlung (not-egg.de), kenne ich von der VeggieWorld und hätte es gern öfter. Wäre eine Aufnahme ins Sortiment möglich?"
+        ],
         middleVariants: [
           "Auf der VeggieWorld habe ich Not Egg probiert, ein veganes Spiegelei aus der Tiefkühltruhe (not-egg.de). Ich war überrascht, es schmeckt [[wirklich|tatsächlich|einfach]] wie ein Spiegelei. Ich würde es gern [[öfter essen|regelmäßig kaufen|öfter zu Hause haben]]. Im Markt habe ich es aber nicht gefunden. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?|Könnten Sie es für den Markt bestellen?|Würden Sie es ins Tiefkühlregal aufnehmen?]]",
           "Ich war auf der VeggieWorld und habe dort Not Egg gegessen, ein pflanzliches Tiefkühl-Spiegelei (not-egg.de). Geschmack und Konsistenz stimmen, sogar der knusprige Rand. Seitdem suche ich es im Supermarkt. [[Könnten Sie es ins Sortiment aufnehmen?|Können Sie es bestellen?|Wäre es möglich, es ins Sortiment zu nehmen?|Lässt sich das einrichten?|Könnten Sie es für den Markt bestellen?|Würden Sie es ins Tiefkühlregal aufnehmen?]]",
@@ -414,12 +523,18 @@ var CAMPAIGNS = {
         ]
       },
       {
-        /* Erscheint nur, wenn der gewählte Markt in NOT_EGG_STOCKISTS steht.
-           Hat eigene Betreffs, impact- und outro-Texte, weil die Wunsch-Texte
+        /* Erscheint nur bei Märkten, die das Produkt schon führen.
+           Hat eigene Betreffs und Zusatz-Texte (impact), weil die Wunsch-Texte
            bei einer Vorratsfrage nicht passen würden.                        */
         id: "restock",
         onlyStocked: true,
         label: "🔄 Ich habe es im Markt nicht gefunden",
+        /* Kurze Fassung für den Stil "Kurz" */
+        kurz: [
+          "Laut not-egg.de/bezugsquellen führt der Markt Not Egg, das vegane Tiefkühl-Spiegelei. Ich habe es zuletzt nicht gefunden. Ist es vorrätig?",
+          "Ich habe im Markt Not Egg gesucht (veganes Spiegelei, tiefgekühlt, not-egg.de), aber nicht gefunden. Ist es gerade aus?",
+          "Gibt es Not Egg, das vegane Spiegelei aus der Tiefkühltruhe (not-egg.de), dort noch? Beim letzten Einkauf habe ich es nicht gesehen."
+        ],
         subjects: [
           "Ist Not Egg bei {{market}} vorrätig?",
           "Frage zu Not Egg bei {{market}}",
@@ -444,14 +559,10 @@ var CAMPAIGNS = {
           "Ich frage nach, weil ich es gern öfter kaufen würde.",
           ""
         ],
-        outro: [
-          "Über eine kurze Antwort würde ich mich freuen.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-          "Falls diese Mail nicht an der richtigen Stelle gelandet ist, leiten Sie sie bitte an die Marktleitung weiter. Danke!\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-          "Danke für die Auskunft!\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-          "Vielen Dank im Voraus und [[viele|freundliche|beste]] Grüße\n{{user_name}}",
-          "Ich freue mich auf Ihre Rückmeldung.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-          "Danke für Ihre Mühe!\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}",
-          "Vielen Dank fürs Nachsehen.\n\n[[Viele Grüße|Freundliche Grüße|Beste Grüße|Mit freundlichen Grüßen|Herzliche Grüße]]\n{{user_name}}"
+        /* Zusätzliche Schlusssätze nur für die Vorratsfrage. Gruß und übrige Schlusssätze kommen aus dem Stil. */
+        closingExtra: [
+          "Danke für die Auskunft!",
+          "Vielen Dank fürs Nachsehen."
         ]
       }
     ]
@@ -594,7 +705,9 @@ var picked = {};          /* angekreuzte Themen: { id: true } */
 var markets = [];
 var manualMode = false;
 var searchRun = 0;
-var roll = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0, seed: 1 };
+var roll = { subject: 0, intro: 0, middle: 0, impact: 0, outro: 0, gruss: 0, seed: 1 };
+var style = null;            /* aktueller Stil der E-Mail */
+var styleByUser = false;     /* true, sobald jemand den Stil selbst gewählt hat */
 /* Liest die Händlerliste einer Aktion aus der Bezugsquellen-Seite (gleiche Website). */
 async function loadStockists(key) {
   var c = CAMPAIGNS[key];
@@ -723,6 +836,9 @@ function selectCampaign(key) {
   setManualMode(false, true);
   renderShare();
   roll = randomRoll();
+  style = pickStyle();
+  styleByUser = false;
+  renderStyleButtons();
   onMarketChange();
 }
 function currentMarket() {
@@ -799,15 +915,55 @@ function renderTopicButtons() {
 }
 function randomRoll() {
   var r = function () { return Math.floor(Math.random() * 1000000); };
-  return { subject: r(), intro: r(), middle: r(), impact: r(), outro: r(), seed: r() + 1 };
+  return { subject: r(), intro: r(), middle: r(), impact: r(), outro: r(), gruss: r(), seed: r() + 1 };
+}
+/* Stile der Aktion. Ohne "styles" gilt ein einziger Stil aus den alten "blocks". */
+function campStyles() {
+  if (camp.styles && camp.styles.length) return camp.styles;
+  var b = camp.blocks || {};
+  return [{ id: "standard", label: "Standard", weight: 1, intro: b.intro || [""], impact: b.impact || [""], closing: b.outro || [""], gruss: [""], legacy: true }];
+}
+/* Wählt einen Stil nach Gewicht. Der Standard kommt am häufigsten, die anderen ab und zu. */
+function pickStyle() {
+  var list = campStyles(), sum = 0;
+  list.forEach(function (st) { sum += st.weight || 1; });
+  var x = Math.random() * sum;
+  for (var i = 0; i < list.length; i++) { x -= list[i].weight || 1; if (x < 0) return list[i]; }
+  return list[0];
+}
+function renderStyleButtons() {
+  var list = campStyles(), box = $("style-buttons");
+  $("style-section").classList.toggle("hidden", list.length < 2);
+  box.innerHTML = "";
+  list.forEach(function (st) {
+    var selected = st === style;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-pressed", selected ? "true" : "false");
+    btn.className = selected
+      ? "text-center px-2 py-2 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-950 font-bold text-sm transition"
+      : "text-center px-2 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition";
+    btn.textContent = st.label;
+    btn.addEventListener("click", function () {
+      style = st;
+      styleByUser = true;
+      roll = randomRoll();
+      renderStyleButtons();
+      renderEmail();
+    });
+    box.appendChild(btn);
+  });
 }
 function rollNewCombination() {
   var before = $("preview-body").value;
   for (var i = 0; i < 5; i++) {       /* nicht zweimal denselben Text würfeln */
     roll = randomRoll();
+    /* Wer den Stil nicht selbst gewählt hat, bekommt beim Würfeln auch mal einen anderen. */
+    if (!styleByUser) style = pickStyle();
     renderEmail();
     if ($("preview-body").value !== before) break;
   }
+  renderStyleButtons();
 }
 /* =====================================================================
    MARKTAUSWAHL
@@ -1152,17 +1308,20 @@ function renderEmail() {
     market: market ? market.name + " (" + (market.street || PH_STREET) + ")" : PH_MARKET,
     brand: market ? market.brand : "Markt"
   };
-  /* Ein Thema darf subjects, intro, impact und outro selbst mitbringen. */
+  /* Anrede, Zusatz, Schluss und Gruß kommen aus dem gewählten Stil. Ein Thema darf eigene
+     Betreffs (subjects) und Zusätze (impact) mitbringen und Schlusssätze ergänzen (closingExtra). */
+  var st = style || campStyles()[0];
   var subjects = topic.subjects || camp.subjects;
-  var intro = topic.intro || camp.blocks.intro;
-  var impact = topic.impact || camp.blocks.impact;
-  var outro = topic.outro || camp.blocks.outro;
+  var impact = st.short ? [""] : (topic.impact || st.impact);
+  var closing = st.closing.concat(topic.closingExtra || [], topic.onlyStocked ? [] : (st.closingWish || []));
+  var gruss = pick(st.gruss, roll.gruss);
   var body = [
-    pick(intro, roll.intro),
-    topics.map(function (t, i) { return pick(t.middleVariants, roll.middle + i); }).join("\n\n"),
+    pick(topic.intro || st.intro, roll.intro),
+    topics.map(function (t, i) { return pick(st.short && t.kurz ? t.kurz : t.middleVariants, roll.middle + i); }).join("\n\n"),
     pick(impact, roll.impact),
-    pick(outro, roll.outro)
+    pick(closing, roll.outro)
   ].filter(Boolean).join("\n\n");   /* leere Bausteine fallen weg */
+  if (!st.legacy) body += "\n\n" + gruss + "\n{{user_name}}";
   $("preview-to").textContent = rcpt.to;
   $("preview-cc").textContent = rcpt.cc;
   $("preview-cc-wrap").classList.toggle("hidden", !rcpt.cc);
